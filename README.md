@@ -18,7 +18,24 @@ The goals are to:
 
 This project is different from previous work such as the system used by [Google's priority inbox](http://static.googleusercontent.com/media/research.google.com/en/us/pubs/archive/36955.pdf) in that the models used here are not able to be trained in parallel and later combined.
 
-# Implementation plan
+# Implementation
+
+## Environment
+The code is designed to be run on [Flux](http://arc.research.umich.edu/flux-and-other-hpc-resources/flux/)
+
+Caffe can be added to the python path using:
+
+```
+export PYTHONPATH=/home/software/rhel6/caffe/0.9999/distribute/python:$PYTHONPATH
+```
+
+Similalry, protobuf can be added to the path using:
+
+```
+export PYTHONPATH=/home/swpecht/term-project/proto/protobuf-2.5.0/:$PYTHONPATH
+```
+
+The required modules can be found in the [required_modules](required_modules) file.
 
 # Data collection
 
@@ -26,6 +43,8 @@ This project is different from previous work such as the system used by [Google'
 
 1. Run cifar10 caffe example to ensure everything works - DONE
 2. Run cifar10 caffe example in python
+3. Compare training time on various training datasets sizes to compute theoretical possible speedup
+
 
 # References
 
