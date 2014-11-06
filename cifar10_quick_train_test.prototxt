@@ -1,26 +1,25 @@
 name: "CIFAR10_quick"
 layers {
   name: "cifar"
-  type: MEMORY_DATA 
+  type: MEMORY_DATA
   top: "data"
   top: "label"
   memory_data_param {
     height: 32
     width: 32
     channels: 3
-    batch_size: 100
+    batch_size: 25
   }
   include: { phase: TRAIN }
 }
 layers {
   name: "cifar"
-  type: MEMORY_DATA
+  type: DATA
   top: "data"
   top: "label"
-   memory_data_param {
-    height: 32
-    width: 32
-    channels: 3
+  data_param {
+    source: "example/cifar10-leveldb/cifar-test-leveldb"
+    # mean_file: "example/mean.binaryproto"
     batch_size: 100
   }
   include: { phase: TEST }
