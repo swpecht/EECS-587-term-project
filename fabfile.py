@@ -8,6 +8,8 @@ def transfer():
     print('Transfering files...')
     # Need to use the flux transfer host
     put(local_path='./*.py', remote_path='~/term-project/')
+    put(local_path='./*.prototxt', remote_path='~/term-project/')
+    put(local_path='./*.pbs', remote_path='~/term-project/')
 
 
 def get_output(folder):
