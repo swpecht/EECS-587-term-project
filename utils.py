@@ -15,7 +15,11 @@ def extract_data(file):
         1. The number of pictures
         2. Color channel (3)
         3. Pixel value (1024, 32x32 image)
-        4. Place holder to meet caffe 4d requirement"""
+        4. Place holder to meet caffe 4d requirement
+
+        Ref on data shape: https://groups.google.com/forum/#!msg/caffe-users/
+                            wWSGX4vmAh4/ivEjy-pPLckJ
+        """
     raw_data = unpickle(file)
     labels = np.array(raw_data['labels'])
     raw_data = np.array(raw_data['data'])
