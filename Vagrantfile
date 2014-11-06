@@ -79,25 +79,6 @@ apt-get install g++ git unzip vim -y
 apt-get install libopenmpi-dev libopenmpi-dbg -y
 pip install mpi4py
 
-# Caffe
-apt-get install libprotobuf-dev libleveldb-dev libsnappy-dev libopencv-dev libboost-all-dev libhdf5-serial-dev -y
-# glog
-wget https://google-glog.googlecode.com/files/glog-0.3.3.tar.gz
-tar zxvf glog-0.3.3.tar.gz
-cd glog-0.3.3
-./configure
-make && make install
-# gflags
-wget https://github.com/schuhschuh/gflags/archive/master.zip
-unzip master.zip
-cd gflags-master
-mkdir build && cd build
-export CXXFLAGS="-fPIC" && cmake .. && make VERBOSE=1
-make && make install
-# lmdb
-git clone git://gitorious.org/mdb/mdb.git
-cd mdb/libraries/liblmdb
-make && make install
 SCRIPT
 
     config.vm.provision "shell", inline: $script
