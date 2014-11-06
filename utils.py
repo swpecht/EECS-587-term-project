@@ -10,12 +10,17 @@ def unpickle(file):
 
 
 def extract_data(file):
-    """ Returns the [4-d numpy data array, labels] of the target file """
+    """ Returns the [4-d numpy data array, labels] of the target file.
+    The first dimensions of the data array are:
+        1. The number of pictures
+        2. Color channel (3)
+        3. Pixel value (1024, 32x32 image)
+        4. Place holder to meet caffe 4d requirement"""
     raw_data = unpickle(file)
     labels = np.array(raw_data['labels'])
     raw_data = np.array(raw_data['data'])
 
-    data = np.zeros((10000, 3, 1024),dtype=np.uint8)
+    data = np.zeros((10000, 3, 1024), dtype=np.uint8)
     # Copy data channels
     data[:, 0, :] = raw_data[:, 0:1024]
     data[:, 1, :] = raw_data[:, 1024:2048]
