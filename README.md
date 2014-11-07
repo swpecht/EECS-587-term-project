@@ -20,10 +20,10 @@ Training models in parallel poses three main challenges:
 * Requirements for synchronization
 
 This project builds off of the work of [Dahl et al](http://www.cs.swarthmore.edu/~newhall/papers/pdcn08.pdf). And addresses the following
+* Testing the methodology on larger sets of ANN problems
 
 As well as accounting for:
 * Dynamically adjusting the number of nodes
-* Testing the methodology on larger sets of ANN problems
 
 # Implementation
 
@@ -53,7 +53,11 @@ The required modules can be found in the [required_modules](required_modules) fi
 1. Run cifar10 caffe example to ensure everything works - DONE
 2. Run cifar10 caffe example in python - DONE
 3. Compare training time on various training datasets sizes to compute theoretical possible speedup
-
+	* Implement mean adjustment
+4. Create mocked behavior for the mpi portion
+	* Get actual weight diffs
+	* Implement stopping logic
+	* Implement node addition / loss logic
 
 # References
 
