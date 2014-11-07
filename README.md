@@ -4,21 +4,30 @@ EECS-587-term-project
 Distributed image classification and model training.
 
 # Summary
+There are a number of different levels of parallelism possible when using neural networks. A more detailed analysis can be found on [this netflix blog](http://techblog.netflix.com/2014/02/distributed-neural-networks-with-gpus.html). The main three levels are:
 
-The aim of this project is to simulate a system that classifies images submitted by users. The cifar-10 data set will be used as sample data. Outside of classifying the images, the system should:
+#. Across region
+#. Hyperparameter optimization
+#. Model training
 
-* Periodically update the classification models based on new data while still serving new requests
-* Take a user's history into account when making a classification of an image
+The first two levels are frequently done in parallel. Parallelizing across regions requires little to no communication. And hyperparamemter optimization can be performed using a number of parallel optimization algorithms.
 
-The goals are to:
+Training models in parallel poses three main challenges:
 
-* Determine how different communication and model update freuqencies impact system performance over time
-* Develop a method to keep user models updated despite the large number of users
-* Examine different approaches to parallelize the training of the models
+#. Stopping criteria
+#. Distributing training data
+#. Balancing batch size
+#. Requirements for synchronization
 
-This project is different from previous work such as the system used by [Google's priority inbox](http://static.googleusercontent.com/media/research.google.com/en/us/pubs/archive/36955.pdf) in that the models used here are not able to be trained in parallel and later combined.
+This project builds off of the work of [Dahl et al](http://www.cs.swarthmore.edu/~newhall/papers/pdcn08.pdf). And addresses the following
+
+As well as accounting for:
+* Dynamically adjusting the number of nodes
+* Testing the methodology on larger sets of ANN problems
 
 # Implementation
+
+Batch size determines training time
 
 ## Environment
 The code is designed to be run on [Flux](http://arc.research.umich.edu/flux-and-other-hpc-resources/flux/)
@@ -42,7 +51,7 @@ The required modules can be found in the [required_modules](required_modules) fi
 # Plan
 
 1. Run cifar10 caffe example to ensure everything works - DONE
-2. Run cifar10 caffe example in python
+2. Run cifar10 caffe example in python - DONE
 3. Compare training time on various training datasets sizes to compute theoretical possible speedup
 
 
