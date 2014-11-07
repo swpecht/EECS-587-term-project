@@ -34,13 +34,13 @@ The code is designed to be run on [Flux](http://arc.research.umich.edu/flux-and-
 
 Caffe can be added to the python path using:
 
-```
+```bash
 export PYTHONPATH=/home/software/rhel6/caffe/0.9999/distribute/python:$PYTHONPATH
 ```
 
 Similalry, protobuf can be added to the path using:
 
-```
+```bash
 export PYTHONPATH=/home/swpecht/term-project/proto/protobuf-2.5.0/:$PYTHONPATH
 ```
 
