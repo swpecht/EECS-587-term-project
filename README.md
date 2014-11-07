@@ -6,18 +6,18 @@ Distributed image classification and model training.
 # Summary
 There are a number of different levels of parallelism possible when using neural networks. A more detailed analysis can be found on [this netflix blog](http://techblog.netflix.com/2014/02/distributed-neural-networks-with-gpus.html). The main three levels are:
 
-#. Across region
-#. Hyperparameter optimization
-#. Model training
+1. Across region
+2. Hyperparameter optimization
+3. Model training
 
 The first two levels are frequently done in parallel. Parallelizing across regions requires little to no communication. And hyperparamemter optimization can be performed using a number of parallel optimization algorithms.
 
 Training models in parallel poses three main challenges:
 
-#. Stopping criteria
-#. Distributing training data
-#. Balancing batch size
-#. Requirements for synchronization
+* Stopping criteria
+* Distributing training data
+* Balancing batch size
+* Requirements for synchronization
 
 This project builds off of the work of [Dahl et al](http://www.cs.swarthmore.edu/~newhall/papers/pdcn08.pdf). And addresses the following
 
