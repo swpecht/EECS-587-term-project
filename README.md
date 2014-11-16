@@ -50,6 +50,27 @@ The required modules can be found in the [required_modules](required_modules) fi
 
 # Plan
 
+Use docker and serf rather than mpi and flux?
+Docker is more trouble to configure than it's worth for this project.
+    * Pros
+        * full control of the environment (latest caffe build)
+        * cooler
+        * Serf seems to handle nodes joining and leaving better
+    * Cons
+        * Need to provision the environment
+        * Testing at scale could cost money
+    * In order to do this I need to:
+        * Confirm I can send messages and wait to recieve messages using serf
+            * https://github.com/spikeekips/serf-python
+            * Just use serf to handle nodes joining and leaving
+        * Confirm I can install caffe in docker - this is more difficult than anticipated. Will just use regular vms instead
+            * https://registry.hub.docker.com/u/tleyden5iwx/caffe/dockerfile/
+        * Figure out how to access the raw image data in docker - see above, just using regular vms
+Use Golang?
+* Is there machine learning available?
+* Will be more focused on building the communication protocol
+* Can use serf for the communication, golang scripts as handlers? Sort of a connector patter, where use tcp to communicate.
+
 1. Run cifar10 caffe example to ensure everything works - DONE
 2. Run cifar10 caffe example in python - DONE
 3. Compare training time on various training datasets sizes to compute theoretical possible speedup
