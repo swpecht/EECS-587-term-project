@@ -5,82 +5,44 @@
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  # All Vagrant configuration is done here. The most common configuration
-  # options are documented and commented below. For a complete reference,
-  # please see the online documentation at vagrantup.com.
 
-  # Every Vagrant virtual environment requires a box to build off of.
-  config.vm.box = "base"
-
-  # Disable automatic box update checking. If you disable this, then
-  # boxes will only be checked for updates when the user runs
-  # `vagrant box outdated`. This is not recommended.
-  # config.vm.box_check_update = false
-
-  # Create a forwarded port mapping which allows access to a specific port
-  # within the machine from a port on the host machine. In the example below,
-  # accessing "localhost:8080" will access port 80 on the guest machine.
-  # config.vm.network "forwarded_port", guest: 80, host: 8080
-
-  # Create a private network, which allows host-only access to the machine
-  # using a specific IP.
-  # config.vm.network "private_network", ip: "192.168.33.10"
-
-  # Create a public network, which generally matched to bridged network.
-  # Bridged networks make the machine appear as another physical device on
-  # your network.
-  # config.vm.network "public_network"
-
-  # If true, then any SSH connections made will enable agent forwarding.
-  # Default value: false
-  # config.ssh.forward_agent = true
-
-  # Share an additional folder to the guest VM. The first argument is
-  # the path on the host to the actual folder. The second argument is
-  # the path on the guest to mount the folder. And the optional third
-  # argument is a set of non-required options.
-  # config.vm.synced_folder "../data", "/vagrant_data"
-
-  # Provider-specific configuration so you can fine-tune various
-  # backing providers for Vagrant. These expose provider-specific options.
-  # Example for VirtualBox:
-  #
-  # config.vm.provider "virtualbox" do |vb|
-  #   # Don't boot with headless mode
-  #   vb.gui = true
-  #
-  #   # Use VBoxManage to customize the VM. For example to change memory:
-  #   vb.customize ["modifyvm", :id, "--memory", "1024"]
-  # end
-  #
-  # View the documentation for the provider you're using for more
-  # information on available options.
-
-$script = <<SCRIPT
+$script_go = <<SCRIPT
 # Require update call
-apt-get update -y
+apt-get update
 
-# Prepare python and instalal pip
-apt-get install python-dev -y
-wget https://bootstrap.pypa.io/get-pip.py
-python get-pip.py
 
-# Install fabric and dependencies
-pip install ecdsa
-pip install paramiko
-pip install pycrypto
-pip install fabric
+# Install dev tools
+apt-get install -y
+                    wget \
+                    vim \
+                    git
 
-# Dev tools
-pip install numpy
-apt-get install g++ git unzip vim -y
+# Install Go
+wget https://storage.googleapis.com/golang/go1.3.3.linux-amd64.tar.gz
+tar -C /usr/local -xzf go1.3.3.linux-amd64.tar.gz
+echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile
+echo 'export GOPATH=$HOME/go' >> /etc/profile
+echo 'export PATH=$PATH:$GOPATH/bin' >> /etc/profile
+echo 'export GOBIN=$GOPATH/bin'
+mkdir $GOPATH
+mkdir $GOPATH/pkg
+mkdir $GOPATH/bin
+mkdir $GOPATH/src
 
-# OpenMPI
-apt-get install libopenmpi-dev libopenmpi-dbg -y
-pip install mpi4py
+# Setup go dev environtment
+
 
 SCRIPT
 
-    config.vm.provision "shell", inline: $script
+  config.vm.define "go_dev" do |go_dev|
+    go_dev.vm.box = "ubuntu/trusty64"
+    go_dev.vm.provision "shell", inline: $script_go
+    go_dev.vm.network "forwarded_port", guest: 8080, host: 8080
+
+    go_dev.vm.provider "virtualbox" do |v|
+      v.memory = 2048
+    end
+  end
+
 
 end
