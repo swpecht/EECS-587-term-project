@@ -18,6 +18,10 @@ type ClientFactory struct {
 func (f *ClientFactory) NewClient() (client, error) {
 	c := client{}
 	c.ActiveMembers = make(map[string]Node)
+	c.pendingMembers = new([]Node)
+	//c.EventChannel = &make(chan event)
+	// Start event processing
+	// go c.processEvents()
 
 	var config *memberlist.Config = memberlist.DefaultLocalConfig()
 	config.BindPort = memberlist_starting_port + f.num_created

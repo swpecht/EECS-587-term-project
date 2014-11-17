@@ -3,6 +3,7 @@ package DUP
 import (
 	"github.com/stretchr/testify/assert"
 	"testing"
+	//"time"
 )
 
 func TestMemberList(t *testing.T) {
@@ -25,7 +26,8 @@ func TestMemberList(t *testing.T) {
 	assert.Equal(0, client2.NumActiveMembers(), "Not purging active after join")
 
 	// Test tracking of pending nodes
-	assert.Equal(2, len(client.pendingMembers), "Not tracking pending members")
+	// time.Sleep(1000 * time.Millisecond) // delay to allow joining
+	assert.Equal(2, len(*client.pendingMembers), "Not tracking pending members")
 
 	num_active := client.UpdateActiveMembers()
 	assert.Equal(3, num_active, "invlaid new number of active members.")
