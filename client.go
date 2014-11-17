@@ -5,15 +5,31 @@ import (
 )
 
 type client struct {
-	membersList    *memberlist.Memberlist // Underlying memberlist to track membership
-	pendingMembers []memberlist.Node      // Members that are online, but not active
-	ActiveMembers  []memberlist.Node      // Members that are online and active
+	memberList     *memberlist.Memberlist // Underlying memberlist to track membership
+	pendingMembers []*memberlist.Node     // Members that are online, but not active
+	ActiveMembers  map[string]Node        // Members that are online and active, mapped by the memberlist.Node.Name
 	Name           string                 // Unique name of the client
 	node           Node                   // Used for TCP communications
 }
 
 func (c client) NotifyJoin(n *memberlist.Node) {
 	// fmt.Println(c.Name + " " + n.Name + " joined!")
+	// Maybe send an event rather than this, as the proper information
+	// is not present here.
+	//
+	// The active members could be stored as a map, based on the memberlist.Node,
+	// That way, the membership could be updated fairly easily, based on the information here.
+	// Then, when a node joins, it chould scatter it's connection info to everyone.
+	// Then all nodes would have the updated active memberlist, and would be able to continue after the
+	// UpdateActiveMembers call.
+
+	if n.Name == c.Name {
+		// The initial self notification
+		c.ActiveMembers[n.Name] = c.node
+		return
+	}
+
+	c.pendingMembers = append(c.pendingMembers, n)
 }
 
 func (c client) NotifyLeave(n *memberlist.Node) {
@@ -25,7 +41,7 @@ func (c client) NotifyUpdate(n *memberlist.Node) {
 }
 
 func (c client) NumMembers() int {
-	return c.membersList.NumMembers()
+	return c.memberList.NumMembers()
 }
 
 func (c client) NumActiveMembers() int {
@@ -38,7 +54,7 @@ func (c client) NumActiveMembers() int {
 // of nodes cannot merge with another group, but the sub group must all join
 // individually.
 func (c *client) Join(addresses []string) (int, error) {
-	n, err := c.membersList.Join(addresses)
+	n, err := c.memberList.Join(addresses)
 	return n, err
 }
 

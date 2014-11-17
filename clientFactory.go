@@ -16,6 +16,7 @@ type ClientFactory struct {
 
 func (f *ClientFactory) NewClient() (client, error) {
 	c := client{}
+	c.ActiveMembers = make(map[string]Node)
 
 	var config *memberlist.Config = memberlist.DefaultLocalConfig()
 	config.BindPort = memberlist_starting_port + f.num_created
@@ -25,7 +26,7 @@ func (f *ClientFactory) NewClient() (client, error) {
 	config.Events = c
 	list, err := memberlist.Create(config)
 
-	c.membersList = list
+	c.memberList = list
 
 	c.node = Node{
 		Addr: config.BindAddr,
