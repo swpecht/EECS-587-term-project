@@ -20,7 +20,7 @@ const (
 // into the appropriate message type.
 type Message struct {
 	Type messageType
-	Data interface{}
+	Data []byte
 }
 
 type ActivateMsg struct {
@@ -43,18 +43,27 @@ func (c *client) handleConn(conn *net.TCPConn) {
 
 // Activates all pending members
 func (c *client) activatePendingMembers() {
+	// TODO implement locks for this
 	pending_members := *c.pendingMembers
+	activeMembers := make([]Node, len(c.ActiveMembers)+len(pending_members))
+
+	activeMembers = append(activeMembers, pending_members...)
+
+	for _, value := range c.ActiveMembers {
+		activeMembers = append(activeMembers, value)
+	}
+
 	for i := 0; i < len(pending_members); i++ {
 		tcpAddr := pending_members[i].GetTCPAddr()
 		tcp_conn, _ := net.DialTCP("tcp", nil, &tcpAddr)
-
+		c.sendActivateMessage(tcp_conn, activeMembers)
 	}
 }
 
 // Send a message over a given TCP connection
 func sendMessage(conn *net.TCPConn, msg Message) error {
 	// Serialize the message
-	b, err := json.Marshal(m)
+	b, err := json.Marshal(msg)
 	if err != nil {
 		return err
 	}
@@ -67,7 +76,11 @@ func sendMessage(conn *net.TCPConn, msg Message) error {
 // tcp connection.
 func (c *client) sendActivateMessage(conn *net.TCPConn, activeNodes []Node) error {
 	activateMessage := ActivateMsg{ActiveNodes: activeNodes}
-	msg := Message{Type: activateMsg, Body: activateMessage}
+	b, err := json.Marshal(activateMessage)
+	if err != nil {
+		return err
+	}
+	msg := Message{Type: activateMsg, Data: b}
 	return sendMessage(conn, msg)
 }
 
