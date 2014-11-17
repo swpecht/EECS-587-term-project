@@ -7,28 +7,33 @@ import (
 
 // https://github.com/hashicorp/memberlist
 
-type Client struct {
+type client struct {
 	membersList *memberlist.Memberlist
 }
 
-func (c Client) NumMembers() int {
+type ClientFactory struct {
+	num_created int
+}
+
+func (f *ClientFactory) NewClient() (client, error) {
+	c := client{}
+
+	var config *memberlist.Config = memberlist.DefaultLocalConfig()
+	config.BindPort = 7946 + f.num_created
+	config.Name = config.Name + ":" + strconv.Itoa(7946) + "-" + strconv.Itoa(f.num_created)
+	config.AdvertisePort = 7946 + f.num_created
+	list, err := memberlist.Create(config)
+
+	c.membersList = list
+	f.num_created += 1
+	return c, err
+}
+
+func (c client) NumMembers() int {
 	return c.membersList.NumMembers()
 }
 
-func (c *Client) Start(port int) {
-	var config *memberlist.Config = memberlist.DefaultLocalConfig()
-	config.BindPort = port
-	config.Name = strconv.Itoa(port)
-	config.AdvertisePort = port
-	list, err := memberlist.Create(config)
-	if err != nil {
-		panic("Failed to create memberlist: " + err.Error())
-	}
-
-	c.membersList = list
-}
-
-func (c Client) Join(addresses []string) int {
+func (c client) Join(addresses []string) int {
 	n, err := c.membersList.Join(addresses)
 	if err != nil {
 		panic("Failed to join cluster: " + err.Error())
@@ -37,6 +42,6 @@ func (c Client) Join(addresses []string) int {
 	return n
 }
 
-func (c Client) GetMembers() string {
+func (c client) GetMembers() string {
 	return "MEMBERS2"
 }

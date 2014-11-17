@@ -9,15 +9,14 @@ import (
 //https://golang.org/doc/code.html
 
 func main() {
-	client := communication.Client{}
-	client.Start(7946)
+	factory := communication.ClientFactory{}
+	client, _ := factory.NewClient()
 
-	client2 := communication.Client{}
-	client2.Start(7947)
-
-	var num int
+	client2, _ := factory.NewClient()
+	client3, _ := factory.NewClient()
 
 	client2.Join([]string{"0.0.0.0:7946"})
-	num = client.NumMembers()
+	client3.Join([]string{"0.0.0.0:7946"})
+	num := client.NumMembers()
 	fmt.Println(num)
 }
