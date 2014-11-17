@@ -1,3 +1,4 @@
+![build status](https://travis-ci.org/swpecht/EECS-587-term-project.svg?branch=master)
 EECS-587-term-project
 =====================
 
