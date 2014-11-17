@@ -30,7 +30,7 @@ mkdir $GOPATH/bin
 mkdir $GOPATH/src
 
 # Setup go dev environtment
-
+go get github.com/stretchr/testify
 
 SCRIPT
 
@@ -39,6 +39,8 @@ SCRIPT
     go_dev.vm.provision "shell", inline: $script_go
     go_dev.vm.network "forwarded_port", guest: 8080, host: 8080
 
+    # Make sure everything is in the right place for go
+    config.vm.synced_folder "./", "/home/vagrant/go/src/github.com/swpecht/DUP"
     go_dev.vm.provider "virtualbox" do |v|
       v.memory = 2048
     end
