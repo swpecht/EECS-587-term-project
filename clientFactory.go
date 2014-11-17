@@ -15,8 +15,8 @@ type ClientFactory struct {
 	num_created int
 }
 
-func (f *ClientFactory) NewClient() (client, error) {
-	c := client{}
+func (f *ClientFactory) NewClient() (c client, err error) {
+	c = client{}
 	c.ActiveMembers = make(map[string]Node)
 	c.pendingMembers = new([]Node)
 	//c.EventChannel = &make(chan event)
@@ -30,6 +30,9 @@ func (f *ClientFactory) NewClient() (client, error) {
 	config.AdvertisePort = memberlist_starting_port + f.num_created
 	config.Events = c
 	list, err := memberlist.Create(config)
+	if err != nil {
+		return
+	}
 
 	c.memberList = list
 
@@ -38,7 +41,13 @@ func (f *ClientFactory) NewClient() (client, error) {
 		Port: config.BindPort + tcp_offset,
 	}
 
+	tcpAddr := c.node.GetTCPAddr()
+	c.tcpListener, err = net.ListenTCP("tcp", &tcpAddr)
+	if err != nil {
+		return
+	}
+
 	f.num_created += 1
 
-	return c, err
+	return
 }

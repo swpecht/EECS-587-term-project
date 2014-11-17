@@ -2,7 +2,6 @@ package DUP
 
 import (
 	"net"
-	"strconv"
 )
 
 type Node struct {
@@ -11,6 +10,7 @@ type Node struct {
 }
 
 // Retruns the connection address for this node
-func (n Node) GetConnectionAddress() string {
-	return n.Addr.String() + strconv.Itoa(n.Port)
+func (n Node) GetTCPAddr() net.TCPAddr {
+	tcpAddr := net.TCPAddr{IP: n.Addr, Port: n.Port}
+	return tcpAddr
 }

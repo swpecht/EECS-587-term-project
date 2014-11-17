@@ -2,6 +2,7 @@ package DUP
 
 import (
 	"github.com/hashicorp/memberlist"
+	"net"
 )
 
 type client struct {
@@ -10,6 +11,8 @@ type client struct {
 	ActiveMembers  map[string]Node        // Members that are online and active, mapped by the memberlist.Node.Name
 	Name           string                 // Unique name of the client
 	node           Node                   // Used for TCP communications
+
+	tcpListener *net.TCPListener
 }
 
 func (c client) NotifyJoin(n *memberlist.Node) {
@@ -20,7 +23,7 @@ func (c client) NotifyJoin(n *memberlist.Node) {
 	}
 	new_node := Node{
 		Addr: n.Addr,
-		Port: int(n.Port),
+		Port: int(n.Port) + 100, // Add 100 for the port offset
 	}
 	*c.pendingMembers = append(*c.pendingMembers, new_node)
 }
@@ -47,8 +50,9 @@ func (c client) NumActiveMembers() int {
 // of nodes cannot merge with another group, but the sub group must all join
 // individually. Should this be blocking until the node is made active?
 func (c *client) Join(addresses []string) (int, error) {
-	n, err := c.memberList.Join(addresses)
+	c.memberList.Join(addresses)
 	c.ActiveMembers = make(map[string]Node) // Reset the active members map
+	n, err := c.waitAndActivate()
 	return n, err
 }
 
@@ -57,7 +61,32 @@ func (c *client) Join(addresses []string) (int, error) {
 // have also called this method.
 func (c *client) UpdateActiveMembers() int {
 	// Need to ensure all active members have decided to do this
+	c.Barrier()
 
 	// Need to send go ahead message to new members to be made active
 	return c.NumActiveMembers()
+}
+
+// Determine if the given client is in the active pool
+func (c *client) IsActive() bool {
+	_, ok := c.ActiveMembers[c.Name]
+	return ok
+}
+
+// Barrier that blacks for all active nodes
+func (c *client) Barrier() {
+	if !c.IsActive() {
+		panic("Client is not active!")
+	}
+	if len(c.ActiveMembers) == 1 {
+		// This is the only member so can return instantly
+		//
+		return
+	}
+	return
+}
+
+// Send message to all nodes
+func (c *client) Broadcast(msg string) {
+
 }

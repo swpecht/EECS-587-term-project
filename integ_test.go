@@ -32,22 +32,39 @@ func TestMemberList(t *testing.T) {
 	num_active := client.UpdateActiveMembers()
 	assert.Equal(3, num_active, "invlaid new number of active members.")
 
-	// Test the requirements for all nodes to agree on adding active members
-	client4, _ := factory.NewClient()
-	client4.Join([]string{headName})
-
-	go client.UpdateActiveMembers()
-	assert.Equal(3, client2.NumActiveMembers(), "Allowed actives to join early")
-
-	go client2.UpdateActiveMembers()
-	go client3.UpdateActiveMembers()
-
-	assert.Equal(4, client.NumActiveMembers(),
-		"New member not allowed to be active")
-
 }
 
 func TestJoining(t *testing.T) {
 	// Can only join when not already part of a group
+	// Test the requirements for all nodes to agree on adding active members
+	// client4, _ := factory.NewClient()
+	// client4.Join([]string{headName})
+
+	// go client.UpdateActiveMembers()
+	// assert.Equal(3, client2.NumActiveMembers(), "Allowed actives to join early")
+
+	// go client2.UpdateActiveMembers()
+	// go client3.UpdateActiveMembers()
+
+	// assert.Equal(4, client.NumActiveMembers(),
+	// 	"New member not allowed to be active")
+
 	t.Errorf("Not implemented.")
+}
+
+func TestActiveStatus(t *testing.T) {
+	assert := assert.New(t)
+	headName := "0.0.0.0:7946"
+	// Create some test clients
+	factory := ClientFactory{}
+	client, _ := factory.NewClient()
+	client2, _ := factory.NewClient()
+
+	assert.True(client2.IsActive())
+	go client2.Join([]string{headName})
+	assert.False(client2.IsActive())
+
+	client.UpdateActiveMembers()
+	assert.True(client2.IsActive())
+
 }
