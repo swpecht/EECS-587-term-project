@@ -2,12 +2,13 @@ package DUP
 
 import (
 	"github.com/hashicorp/memberlist"
+	"net"
 	"strconv"
 )
 
 const (
 	memberlist_starting_port int = 7946
-	tcp_starting_port        int = 8000
+	tcp_offset               int = 100
 )
 
 type ClientFactory struct {
@@ -29,8 +30,8 @@ func (f *ClientFactory) NewClient() (client, error) {
 	c.memberList = list
 
 	c.node = Node{
-		Addr: config.BindAddr,
-		Port: tcp_starting_port + f.num_created,
+		Addr: net.ParseIP(config.BindAddr),
+		Port: config.BindPort + tcp_offset,
 	}
 
 	f.num_created += 1

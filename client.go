@@ -52,9 +52,10 @@ func (c client) NumActiveMembers() int {
 // node from the active list. Further more, this should only be called
 // when a node is alone in it's undelying memberlist. Therefore, a group
 // of nodes cannot merge with another group, but the sub group must all join
-// individually.
+// individually. Should this be blocking until the node is made active?
 func (c *client) Join(addresses []string) (int, error) {
 	n, err := c.memberList.Join(addresses)
+	c.ActiveMembers = make(map[string]Node) // Reset the active members map
 	return n, err
 }
 

@@ -22,6 +22,10 @@ func TestMemberList(t *testing.T) {
 
 	// Test tracking of active nodes
 	assert.Equal(1, client.NumActiveMembers(), "bad initial active members")
+	assert.Equal(0, client2.NumActiveMembers(), "Not purging active after join")
+
+	// Test tracking of pending nodes
+	assert.Equal(2, len(client.pendingMembers), "Not tracking pending members")
 
 	num_active := client.UpdateActiveMembers()
 	assert.Equal(3, num_active, "invlaid new number of active members.")
@@ -42,5 +46,6 @@ func TestMemberList(t *testing.T) {
 }
 
 func TestJoining(t *testing.T) {
+	// Can only join when not already part of a group
 	t.Errorf("Not implemented.")
 }
