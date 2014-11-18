@@ -2,6 +2,7 @@ package DUP
 
 import (
 	"encoding/json"
+	"log"
 	"net"
 )
 
@@ -67,7 +68,8 @@ func sendMessage(conn *net.TCPConn, msg Message) error {
 	if err != nil {
 		return err
 	}
-
+	b = append(b, byte('\n'))
+	log.Println("[DEBUG] Serialized Message: " + string(b))
 	conn.Write(b)
 	return err
 }
