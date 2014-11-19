@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"net"
-	"strconv"
 )
 
 // messageType is an integer ID of a type of message that can be received
@@ -31,11 +30,7 @@ type Message struct {
 // {len in}\n{msgbody}
 func (msg Message) Enconde() (outputMsg string, err error) {
 	msgBody, err := json.Marshal(msg)
-
-	msgLen := len(msgBody)
-	outputMsg = strconv.Itoa(msgLen) + string('\n')
 	outputMsg += string(msgBody) + string('\n')
-
 	return
 }
 

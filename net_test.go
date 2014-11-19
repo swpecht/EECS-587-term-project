@@ -67,22 +67,6 @@ func HandleIncomeing(l *net.TCPListener, c chan string) {
 			reader := bufio.NewReader(conn)
 			data, err := reader.ReadString('\n')
 			if err != nil {
-				log.Println("[ERROR] Failed to read message length")
-			}
-			// length, _ := strconv.Atoi(data)
-			// b := make([]byte, length)
-			// buffer := make([]byte, length)
-			// for bytesRead := 0; bytesRead < length; {
-			// 	n, err := reader.Read(buffer)
-			// 	if err != nil {
-			// 		log.Println("[ERROR] Failed read message")
-			// 	}
-			// 	b[bytesRead : bytesRead+n] = buffer
-			// 	bytesRead += n
-			// }
-
-			data, err = reader.ReadString('\n')
-			if err != nil {
 				log.Println("[ERROR] Failed to read message")
 			}
 
