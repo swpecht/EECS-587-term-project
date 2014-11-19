@@ -3,7 +3,7 @@ package DUP
 import (
 	"github.com/stretchr/testify/assert"
 	"testing"
-	//"time"
+	"time"
 )
 
 func TestMemberList(t *testing.T) {
@@ -55,6 +55,8 @@ func TestMemberList(t *testing.T) {
 	go client2.UpdateActiveMembers()
 	go client3.UpdateActiveMembers()
 
+	time.Sleep(5000 * time.Millisecond)
+	//client4.WaitActive()
 	assert.Equal(4, client.NumActiveMembers(),
 		"New member not allowed to be active")
 
@@ -71,7 +73,10 @@ func TestActiveStatus(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to create client: " + err.Error())
 	}
-	client2, _ := factory.NewClient()
+	client2, err := factory.NewClient()
+	if err != nil {
+		t.Errorf("Failed to create client: " + err.Error())
+	}
 
 	defer client.Close()
 	defer client2.Close()
@@ -80,7 +85,6 @@ func TestActiveStatus(t *testing.T) {
 	assert.False(client2.IsActive())
 	client.UpdateActiveMembers()
 	client2.WaitActive()
-	//time.Sleep(500 * time.Millisecond)
-	assert.True(client2.IsActive())
 
+	assert.True(client2.IsActive())
 }

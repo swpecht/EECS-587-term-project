@@ -17,8 +17,13 @@ type client struct {
 	ActiveMembers      map[string]Node // Members that are online and active, mapped by the memberlist.Node.Name
 	Name               string          // Unique name of the client
 	node               Node            // Used for TCP communications
-	MsgChannel         chan Message
-	tcpListener        *net.TCPListener
+
+	msgChannel  chan Message // Main channel on which to receive messages
+	tcpListener *net.TCPListener
+
+	barrierChannel  chan string // The channel that handles barrier message, will be the name of the node that sent the barrier
+	activateChannel chan Message
+	closeChannel    chan bool // channel to stop processing messages
 }
 
 func (c client) NotifyJoin(n *memberlist.Node) {
@@ -72,9 +77,33 @@ func (c *client) Join(addresses []string) {
 	return
 }
 
+// Handles different types of messages
+func (c *client) startMessageHandling() {
+
+	for {
+		select {
+		case <-c.closeChannel:
+			break // done processing
+		case msg := <-c.msgChannel:
+			switch msg.Type {
+			case activateMsg:
+				c.activateChannel <- msg
+			case barrierMsg:
+				c.barrierChannel <- msg.StringData[0] // Pass on the name
+			}
+		}
+
+	}
+}
+
 func (c *client) Close() {
 	c.tcpListener.Close()
 	c.memberList.Shutdown()
+	c.closeChannel <- true
+	// Not totally sure how closing channels works TODO
+	// close(c.msgChannel) // Let all blocked processes finish
+	// close(c.activateChannel)
+	// close(c.barrierChannel)
 }
 
 // Wait until the client is active
@@ -122,29 +151,43 @@ func (c *client) Barrier() {
 	if !c.IsActive() {
 		panic("Client is not active!")
 	}
-	if len(c.ActiveMembers) == 1 {
+	if c.NumActiveMembers() == 1 {
 		// This is the only member so can return instantly
 		return
 	}
-	return
+
+	// Need to broadcast the barrier message
+	msg := Message{
+		Type:       barrierMsg,
+		StringData: []string{c.Name},
+	}
+
+	log.Println("[DEBUG] Broadcasting barrier from", c.Name)
+	c.broadCastMsg(msg)
+
+	// Wait for each node to respond
+	//Get messages from channel
+
+	responded := make(map[string]bool)
+PollingLoop:
+	for {
+		select {
+		case name := <-c.barrierChannel:
+			responded[name] = true
+			log.Println("[DEBUG]", c.Name, "Received barrier from", name, len(responded), "of", c.NumActiveMembers())
+		default:
+			if len(responded) == c.NumActiveMembers() {
+				log.Println("[DEBUG] Barrier completed by", c.Name)
+				break PollingLoop // everyone is at the barrier
+			}
+		}
+	}
+
 }
 
 // Send message to all nodes
 // TODO implement a tree rather than naive send to all
 func (c *client) Broadcast(stringData []string, floatData []float64) {
-	c.ActiveMembersLock.Lock()
-	for _, node := range c.ActiveMembers {
-		tcpConn, err := c.getTCPConection(node)
-		tcpAddr := node.GetTCPAddr()
-		if err != nil {
-			log.Println("[ERROR] Failed to broadcast message to ", tcpAddr.String())
-		}
-		msg := CreateBroadcastMsg(stringData, floatData)
-		err = sendMessage(tcpConn, msg)
-		if err != nil {
-			log.Println("[ERROR] Failed to broadcast message to ", tcpAddr.String())
-		}
-	}
-
-	c.ActiveMembersLock.Unlock()
+	msg := CreateBroadcastMsg(stringData, floatData)
+	c.broadCastMsg(msg)
 }

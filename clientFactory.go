@@ -20,7 +20,13 @@ func (f *ClientFactory) NewClient() (c client, err error) {
 	// Initialize variables
 	c.ActiveMembers = make(map[string]Node)
 	c.pendingMembers = new([]Node)
-	c.MsgChannel = make(chan Message)
+	c.msgChannel = make(chan Message)
+	c.closeChannel = make(chan bool)
+	c.barrierChannel = make(chan string)
+	c.activateChannel = make(chan Message)
+
+	// Start event processing
+	go c.startMessageHandling()
 
 	// Configure the MemberList
 	var config *memberlist.Config = memberlist.DefaultLocalConfig()
@@ -43,7 +49,7 @@ func (f *ClientFactory) NewClient() (c client, err error) {
 		return
 	}
 	// Start the TCP listener
-	go c.tcpListen(c.MsgChannel)
+	go tcpListen(c.tcpListener, c.msgChannel)
 
 	list, err := memberlist.Create(config)
 	if err != nil {
