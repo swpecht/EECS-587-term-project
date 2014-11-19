@@ -4,9 +4,11 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"net"
+	"strconv"
 )
 
 // messageType is an integer ID of a type of message that can be received
@@ -76,6 +78,24 @@ func createActivateMsg(activeMembers []Node) (Message, error) {
 	return msg, err
 }
 
+func decodeActivateMsg(msg Message) ([]Node, error) {
+	var err error
+	if msg.Type != activateMsg {
+		log.Println("[ERROR] Tried to decodeActivateMsg on non-Activate type message")
+		err = errors.New("Failed incorrect message type")
+		return make([]Node, 0), err
+	}
+
+	nodesString := msg.StringData[0]
+	var nodes []Node
+	err = json.Unmarshal([]byte(nodesString), &nodes)
+	if err != nil {
+		log.Println("[ERROR] Failed to unmarshal node list: " + err.Error())
+	}
+
+	return nodes, err
+}
+
 // tcpListen listens for and handles incoming connections
 func (c *client) tcpListen(channel chan Message) {
 	for {
@@ -89,15 +109,20 @@ func (c *client) tcpListen(channel chan Message) {
 
 // Activates all pending members
 func (c *client) activatePendingMembers() {
-	// TODO implement locks for this
-	pending_members := *c.pendingMembers
-	activeMembers := make([]Node, len(c.ActiveMembers)+len(pending_members))
-
 	// Create the appended list of active members
-	activeMembers = append(activeMembers, pending_members...)
+	c.ActiveMembersLock.RLock()
+	activeMembers := make([]Node, len(c.ActiveMembers))
+	var i int = 0
 	for _, value := range c.ActiveMembers {
-		activeMembers = append(activeMembers, value)
+		activeMembers[i] = value
+		i++
 	}
+	c.ActiveMembersLock.RUnlock()
+
+	c.pendingMembersLock.RLock()
+	pending_members := *c.pendingMembers
+	c.pendingMembersLock.RUnlock()
+	activeMembers = append(activeMembers, pending_members...)
 
 	msg, _ := createActivateMsg(activeMembers)
 
@@ -109,6 +134,10 @@ func (c *client) activatePendingMembers() {
 		sendMessage(tcp_conn, msg)
 		log.Println("[DEBUG] Activate message sent to: " + tcpAddr.String())
 	}
+
+	// Update the active members on the local node
+	log.Println("[DEBUG] Total active nodes: " + strconv.Itoa(len(activeMembers)))
+	c.updateActiveMemberList(activeMembers)
 }
 
 // handleConn handles a single incoming TCP connection
@@ -146,19 +175,13 @@ func recvMessage(conn *net.TCPConn) (Message, error) {
 	return msg, err
 }
 
-// Sends an activate message with the specified active nodes over the given
-// tcp connection.
-// func (c *client) sendActivateMessage(conn *net.TCPConn, activeNodes []Node) error {
-// 	activateMessage := ActivateMsg{ActiveNodes: activeNodes}
-// 	b, err := json.Marshal(activateMessage)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	msg := Message{Type: activateMsg, Data: string(b)}
-// 	return sendMessage(conn, msg)
-// }
-
 // Called to handle the tcp communication of a join.
 func (c *client) waitAndActivate() (int, error) {
-	return 0, nil
+	activateMessage := <-c.MsgChannel
+	activeNodes, err := decodeActivateMsg(activateMessage)
+
+	c.updateActiveMemberList(activeNodes)
+
+	log.Println("[DEBUG] Activated node, total active nodes: " + strconv.Itoa(len(activeNodes)))
+	return len(activeNodes), err
 }

@@ -29,14 +29,10 @@ func (f *ClientFactory) NewClient() (c client, err error) {
 	config.Name = c.Name
 	config.AdvertisePort = memberlist_starting_port + f.num_created
 	config.Events = c
-	list, err := memberlist.Create(config)
-	if err != nil {
-		return
-	}
-	c.memberList = list
 
 	// Configure the local Node data
 	c.node = Node{
+		Name: c.Name,
 		Addr: net.ParseIP(config.BindAddr),
 		Port: config.BindPort + tcp_offset,
 	}
@@ -48,6 +44,12 @@ func (f *ClientFactory) NewClient() (c client, err error) {
 	}
 	// Start the TCP listener
 	go c.tcpListen(c.MsgChannel)
+
+	list, err := memberlist.Create(config)
+	if err != nil {
+		return
+	}
+	c.memberList = list
 
 	f.num_created += 1
 

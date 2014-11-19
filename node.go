@@ -5,6 +5,7 @@ import (
 )
 
 type Node struct {
+	Name string
 	Addr net.IP // The address this node can be access at
 	Port int    // The port this node listens for connections on
 }

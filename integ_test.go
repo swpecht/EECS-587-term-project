@@ -3,7 +3,7 @@ package DUP
 import (
 	"github.com/stretchr/testify/assert"
 	"testing"
-	//"time"
+	"time"
 )
 
 func TestMemberList(t *testing.T) {
@@ -30,6 +30,12 @@ func TestMemberList(t *testing.T) {
 
 	num_active := client.UpdateActiveMembers()
 	assert.Equal(3, num_active, "invlaid new number of active members.")
+	time.Sleep(200 * time.Millisecond) // Allow the tcp message to send
+	assert.Equal(3, client2.NumActiveMembers(), "invlaid new number of active members.")
+	assert.Equal(3, client3.NumActiveMembers(), "invlaid new number of active members.")
+
+	assert.True(client2.IsActive())
+	assert.True(client3.IsActive())
 
 }
 
