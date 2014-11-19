@@ -14,7 +14,7 @@ type messageType uint8
 
 // The list of available message types.
 const (
-	activateMsg messageType = iota
+	activateMsg messageType = iota + 1
 	ackMsg
 	broadcastMsg
 	barrierMsg
@@ -47,6 +47,7 @@ func createActivateMsg(activeMembers []Node) (Message, error) {
 }
 
 func decodeActivateMsg(msg Message) ([]Node, error) {
+	log.Println("[DEBUG] Decoding activate message", msg)
 	var err error
 	if msg.Type != activateMsg {
 		log.Println("[ERROR] Tried to decodeActivateMsg on non-Activate type message")
@@ -101,10 +102,18 @@ func (c *client) activatePendingMembers() {
 // Returns a connection to the specified node
 // TODO use a connection pool for speed
 func (c *client) getTCPConection(node Node) (*net.TCPConn, error) {
+	tcp_con, ok := c.connectionPool[node.Name]
+	// If already have one
+	if ok {
+		return tcp_con, nil
+	}
+
 	tcpAddr := node.GetTCPAddr()
 	tcp_conn, err := net.DialTCP("tcp", nil, &tcpAddr)
 	if err != nil {
 		log.Println("[ERROR] Failed to get tcp connection to ", node.GetTCPAddr())
+	} else {
+		c.connectionPool[node.Name] = tcp_con
 	}
 
 	return tcp_conn, err
@@ -127,15 +136,4 @@ func (c *client) broadCastMsg(msg Message) {
 	}
 	c.ActiveMembersLock.Unlock()
 
-}
-
-// Called to handle the tcp communication of a join.
-func (c *client) waitAndActivate() (int, error) {
-	activateMessage := <-c.activateChannel
-	activeNodes, err := decodeActivateMsg(activateMessage)
-
-	c.updateActiveMemberList(activeNodes)
-
-	log.Println("[DEBUG] Activated node, total active nodes: " + strconv.Itoa(len(activeNodes)))
-	return len(activeNodes), err
 }

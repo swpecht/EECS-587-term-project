@@ -84,7 +84,7 @@ func TestActiveStatus(t *testing.T) {
 	client2.Join([]string{headName})
 	assert.False(client2.IsActive())
 	client.UpdateActiveMembers()
-	client2.WaitActive()
-
+	//client2.WaitActive()
+	time.Sleep(100 * time.Millisecond)
 	assert.True(client2.IsActive())
 }

@@ -23,7 +23,7 @@ func (f *ClientFactory) NewClient() (c client, err error) {
 	c.msgChannel = make(chan Message)
 	c.closeChannel = make(chan bool)
 	c.barrierChannel = make(chan string)
-	c.activateChannel = make(chan Message)
+	c.connectionPool = make(map[string]*net.TCPConn)
 
 	// Start event processing
 	go c.startMessageHandling()

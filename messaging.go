@@ -14,9 +14,9 @@ func tcpListen(listener *net.TCPListener, channel chan Message) {
 	for {
 		conn, err := listener.AcceptTCP()
 		if err != nil {
-			log.Println("[Debug] Closing listener")
-			listener.Close()
-			break
+			log.Println("[DEBUG] Closing listener", listener.Addr, err.Error())
+			// listener.Close()
+			return
 		}
 		go handleConn(conn, channel)
 	}
@@ -51,19 +51,18 @@ func Decode(b []byte) (Message, error) {
 
 // handleConn handles a single incoming TCP connection
 func handleConn(c *net.TCPConn, channel chan Message) {
-	for {
-		msg, err := recvMessage(c)
-		if err != nil {
-			log.Println("[ERROR] Failed to rcvmessage: " + err.Error())
-		}
-		if err == io.EOF {
-			log.Println("[DEBUG] Closing connection.")
-			break
-		}
-		log.Println("[DEBUG] Message recieved ", msg)
-		// Quesues messages for processing in the channel
-		channel <- msg
+	msg, err := recvMessage(c)
+	if err != nil {
+		log.Println("[ERROR] Failed to rcvmessage: " + err.Error())
 	}
+	if err == io.EOF {
+		log.Println("[DEBUG] Closing connection.")
+		c.Close()
+		return
+	}
+	// log.Println("[DEBUGMessage recieved ", msg)
+	// Quesues messages for processing in the channel
+	channel <- msg
 
 }
 
@@ -89,6 +88,7 @@ func sendMessage(conn *net.TCPConn, msg Message) error {
 	}
 	log.Println("[DEBUG] Sending message: " + msgString)
 	io.Copy(conn, bytes.NewBufferString(msgString))
-
-	return nil
+	//This is probably timing out, may beed to use a thread ppol
+	//_, err = conn.Write([]byte(msgString))
+	return err
 }

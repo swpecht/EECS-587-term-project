@@ -21,9 +21,10 @@ type client struct {
 	msgChannel  chan Message // Main channel on which to receive messages
 	tcpListener *net.TCPListener
 
-	barrierChannel  chan string // The channel that handles barrier message, will be the name of the node that sent the barrier
-	activateChannel chan Message
-	closeChannel    chan bool // channel to stop processing messages
+	barrierChannel chan string // The channel that handles barrier message, will be the name of the node that sent the barrier
+	closeChannel   chan bool   // channel to stop processing messages
+
+	connectionPool map[string]*net.TCPConn
 }
 
 func (c client) NotifyJoin(n *memberlist.Node) {
@@ -73,7 +74,6 @@ func (c client) NumActiveMembers() int {
 func (c *client) Join(addresses []string) {
 	c.memberList.Join(addresses)
 	c.updateActiveMemberList([]Node{})
-	go c.waitAndActivate()
 	return
 }
 
@@ -85,15 +85,31 @@ func (c *client) startMessageHandling() {
 		case <-c.closeChannel:
 			break // done processing
 		case msg := <-c.msgChannel:
+			log.Println("[DEBUG]", c.node.Name, " Message received", msg)
 			switch msg.Type {
 			case activateMsg:
-				c.activateChannel <- msg
+				c.handleActivateMessage(msg)
+				break
 			case barrierMsg:
-				c.barrierChannel <- msg.StringData[0] // Pass on the name
+				c.barrierChannel <- msg.StringData[0] // Pass on the name, will be handled on the calling thread
+				break
+			default:
+				// log.Println("[ERROR] Unknown message type")
 			}
 		}
 
 	}
+}
+
+func (c *client) handleActivateMessage(msg Message) {
+
+	activeNodes, err := decodeActivateMsg(msg)
+	if err != nil {
+		log.Println("[ERROR] Received malformed activate message")
+		return
+	}
+	c.updateActiveMemberList(activeNodes)
+	log.Println("[DEBUG] Activated node, total active nodes: " + strconv.Itoa(len(activeNodes)))
 }
 
 func (c *client) Close() {
@@ -101,9 +117,8 @@ func (c *client) Close() {
 	c.memberList.Shutdown()
 	c.closeChannel <- true
 	// Not totally sure how closing channels works TODO
-	// close(c.msgChannel) // Let all blocked processes finish
-	// close(c.activateChannel)
-	// close(c.barrierChannel)
+	close(c.msgChannel) // Let all blocked processes finish
+	close(c.barrierChannel)
 }
 
 // Wait until the client is active
@@ -182,7 +197,6 @@ PollingLoop:
 			}
 		}
 	}
-
 }
 
 // Send message to all nodes
