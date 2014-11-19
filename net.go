@@ -110,18 +110,18 @@ func (c *client) tcpListen(channel chan Message) {
 // Activates all pending members
 func (c *client) activatePendingMembers() {
 	// Create the appended list of active members
-	c.ActiveMembersLock.RLock()
+	c.ActiveMembersLock.Lock()
 	activeMembers := make([]Node, len(c.ActiveMembers))
 	var i int = 0
 	for _, value := range c.ActiveMembers {
 		activeMembers[i] = value
 		i++
 	}
-	c.ActiveMembersLock.RUnlock()
+	c.ActiveMembersLock.Unlock()
 
-	c.pendingMembersLock.RLock()
+	c.pendingMembersLock.Lock()
 	pending_members := *c.pendingMembers
-	c.pendingMembersLock.RUnlock()
+	c.pendingMembersLock.Unlock()
 	activeMembers = append(activeMembers, pending_members...)
 
 	msg, _ := createActivateMsg(activeMembers)

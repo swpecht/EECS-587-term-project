@@ -11,14 +11,16 @@ import (
 type client struct {
 	memberList *memberlist.Memberlist // Underlying memberlist to track membership
 
-	pendingMembersLock sync.RWMutex
+	pendingMembersLock sync.Mutex
 	pendingMembers     *[]Node // Members that are online, but not active
-	ActiveMembersLock  sync.RWMutex
+	ActiveMembersLock  sync.Mutex
 	ActiveMembers      map[string]Node // Members that are online and active, mapped by the memberlist.Node.Name
 	Name               string          // Unique name of the client
 	node               Node            // Used for TCP communications
 	MsgChannel         chan Message
 	tcpListener        *net.TCPListener
+
+	closed chan bool
 }
 
 func (c client) NotifyJoin(n *memberlist.Node) {
@@ -31,7 +33,7 @@ func (c client) NotifyJoin(n *memberlist.Node) {
 	if n.Name == c.Name {
 		// The initial self notification
 		c.ActiveMembersLock.Lock()
-		c.ActiveMembers[n.Name] = new_node
+		c.ActiveMembers[c.Name] = new_node
 		c.ActiveMembersLock.Unlock()
 		return
 	}
@@ -54,9 +56,9 @@ func (c client) NumMembers() int {
 }
 
 func (c client) NumActiveMembers() int {
-	c.ActiveMembersLock.RLock()
+	c.ActiveMembersLock.Lock()
 	num := len(c.ActiveMembers)
-	c.ActiveMembersLock.RUnlock()
+	c.ActiveMembersLock.Unlock()
 	return num
 }
 
@@ -72,6 +74,20 @@ func (c *client) Join(addresses []string) {
 	return
 }
 
+func (c *client) Close() {
+	c.tcpListener.Close()
+	c.memberList.Shutdown()
+}
+
+// Wait until the client is active
+func (c *client) WaitActive() {
+	for {
+		if c.IsActive() == true {
+			break
+		}
+	}
+}
+
 // Allows members currently waiting to become active to become active,
 // this method blocks and requires that all current active members
 // have also called this method.
@@ -84,21 +100,23 @@ func (c *client) UpdateActiveMembers() int {
 }
 
 func (c *client) updateActiveMemberList(members []Node) {
+	log.Println("[DEBUG] Updateing active member list with: " + strconv.Itoa(len(members)))
 	c.ActiveMembersLock.Lock()
 	c.ActiveMembers = make(map[string]Node) // Reset the active members map
 
 	for i := range members {
 		c.ActiveMembers[members[i].Name] = members[i]
+		log.Println("[DEBUG] Active member " + strconv.Itoa(i) + " " + members[i].Name)
 	}
 	c.ActiveMembersLock.Unlock()
-	log.Println("[DEBUG] Updateing active member list with: " + strconv.Itoa(len(c.ActiveMembers)))
+
 }
 
 // Determine if the given client is in the active pool
 func (c *client) IsActive() bool {
-	c.ActiveMembersLock.RLock()
-	_, ok := c.ActiveMembers[c.node.Name]
-	c.ActiveMembersLock.RUnlock()
+	c.ActiveMembersLock.Lock()
+	_, ok := c.ActiveMembers[c.Name]
+	c.ActiveMembersLock.Unlock()
 	return ok
 }
 

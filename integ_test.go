@@ -3,7 +3,7 @@ package DUP
 import (
 	"github.com/stretchr/testify/assert"
 	"testing"
-	"time"
+	//"time"
 )
 
 func TestMemberList(t *testing.T) {
@@ -30,13 +30,17 @@ func TestMemberList(t *testing.T) {
 
 	num_active := client.UpdateActiveMembers()
 	assert.Equal(3, num_active, "invlaid new number of active members.")
-	time.Sleep(200 * time.Millisecond) // Allow the tcp message to send
+	client2.WaitActive()
+	client3.WaitActive()
 	assert.Equal(3, client2.NumActiveMembers(), "invlaid new number of active members.")
 	assert.Equal(3, client3.NumActiveMembers(), "invlaid new number of active members.")
 
 	assert.True(client2.IsActive())
 	assert.True(client3.IsActive())
 
+	client.Close()
+	client2.Close()
+	client3.Close()
 }
 
 func TestJoining(t *testing.T) {
@@ -62,14 +66,17 @@ func TestActiveStatus(t *testing.T) {
 	headName := "0.0.0.0:7946"
 	// Create some test clients
 	factory := ClientFactory{}
-	client, _ := factory.NewClient()
+	client, err := factory.NewClient()
+	if err != nil {
+		t.Errorf("Failed to create client: " + err.Error())
+	}
 	client2, _ := factory.NewClient()
 
-	assert.True(client2.IsActive())
-	go client2.Join([]string{headName})
+	client2.Join([]string{headName})
 	assert.False(client2.IsActive())
-
 	client.UpdateActiveMembers()
+	client2.WaitActive()
+	//time.Sleep(500 * time.Millisecond)
 	assert.True(client2.IsActive())
 
 }
