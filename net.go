@@ -42,15 +42,9 @@ type ActivateMsg struct {
 // tcpListen listens for and handles incoming connections
 func (c *client) tcpListen() {
 	for {
-		conn, _ := c.tcpListener.AcceptTCP()
-		go c.handleConn(conn)
+		// conn, _ := c.tcpListener.AcceptTCP()
+		// go handleConn(conn)
 	}
-}
-
-// handleConn handles a single incoming TCP connection
-func (c *client) handleConn(conn *net.TCPConn) {
-	defer conn.Close()
-
 }
 
 // Activates all pending members
@@ -70,6 +64,15 @@ func (c *client) activatePendingMembers() {
 		tcp_conn, _ := net.DialTCP("tcp", nil, &tcpAddr)
 		c.sendActivateMessage(tcp_conn, activeMembers)
 	}
+}
+
+// handleConn handles a single incoming TCP connection
+func handleConn(c *net.TCPConn, channel chan Message) {
+	msg, err := recvMessage(c)
+	if err != nil {
+		log.Println("[ERROR] Failed to rcvmessage: " + err.Error())
+	}
+	channel <- msg
 }
 
 // Marshal the message and send it over a given TCP connection

@@ -62,12 +62,6 @@ func HandleIncomeing(l *net.TCPListener, c chan Message) {
 		// Handle the connection in a new goroutine.
 		// The loop then returns to accepting, so that
 		// multiple connections may be served concurrently.
-		go func(c *net.TCPConn, channel chan Message) {
-			msg, err := recvMessage(c)
-			if err != nil {
-				log.Fatal(err)
-			}
-			channel <- msg
-		}(conn, c)
+		go handleConn(conn, c)
 	}
 }
