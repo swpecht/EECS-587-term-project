@@ -1,14 +1,13 @@
 package DUP
 
 import (
-	"bufio"
 	"log"
 	"net"
 	"testing"
 	"time"
 )
 
-func TestSendMessage(t *testing.T) {
+func TestSendRecvMessage(t *testing.T) {
 
 	listenAddr, err := net.ResolveTCPAddr("tcp", "localhost:5000")
 	if err != nil {
@@ -22,7 +21,7 @@ func TestSendMessage(t *testing.T) {
 	}
 
 	log.Println("[INFO] Starting listener...")
-	c := make(chan string)
+	c := make(chan Message)
 	go HandleIncomeing(listener, c)
 
 	remoteConn, _ := net.DialTCP("tcp", nil, listenAddr)
@@ -39,11 +38,11 @@ func TestSendMessage(t *testing.T) {
 
 	go func() {
 		time.Sleep(1 * time.Second)
-		c <- "DATA"
+		c <- Message{Data: "ERROR"}
 	}()
-	dataReceived := <-c
-	log.Println("[DEBUG] Recieved: " + dataReceived)
-	if dataReceived == "DATA" {
+	msgReceived := <-c
+	log.Println("[DEBUG] Recieved: " + msgReceived.Data)
+	if msgReceived.Data == "ERROR" {
 		t.Error("Timed out!")
 	}
 
@@ -53,7 +52,7 @@ func TestUnwrapMessage(t *testing.T) {
 	t.Errorf("Not implemented")
 }
 
-func HandleIncomeing(l *net.TCPListener, c chan string) {
+func HandleIncomeing(l *net.TCPListener, c chan Message) {
 	for {
 		// Wait for a connection.
 		conn, err := l.AcceptTCP()
@@ -63,15 +62,12 @@ func HandleIncomeing(l *net.TCPListener, c chan string) {
 		// Handle the connection in a new goroutine.
 		// The loop then returns to accepting, so that
 		// multiple connections may be served concurrently.
-		go func(c net.Conn, channel chan string) {
-			reader := bufio.NewReader(conn)
-			data, err := reader.ReadString('\n')
+		go func(c *net.TCPConn, channel chan Message) {
+			msg, err := recvMessage(c)
 			if err != nil {
-				log.Println("[ERROR] Failed to read message")
+				log.Fatal(err)
 			}
-
-			stringData := data
-			channel <- stringData
+			channel <- msg
 		}(conn, c)
 	}
 }

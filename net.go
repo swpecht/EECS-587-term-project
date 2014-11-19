@@ -1,6 +1,7 @@
 package DUP
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"io"
@@ -71,7 +72,7 @@ func (c *client) activatePendingMembers() {
 	}
 }
 
-// Send a message over a given TCP connection
+// Marshal the message and send it over a given TCP connection
 func sendMessage(conn *net.TCPConn, msg Message) error {
 	// Serialize the message
 	msgString, err := msg.Enconde()
@@ -82,6 +83,22 @@ func sendMessage(conn *net.TCPConn, msg Message) error {
 	io.Copy(conn, bytes.NewBufferString(msgString))
 
 	return nil
+}
+
+// Receive a message over a tcp connections, and unmarshal it from JSON
+func recvMessage(conn *net.TCPConn) (Message, error) {
+	reader := bufio.NewReader(conn)
+	b, err := reader.ReadBytes('\n')
+	if err != nil {
+		log.Println("[ERROR] Failed to read message")
+		return Message{}, err
+	}
+	var msg Message
+	err = json.Unmarshal(b, &msg)
+	if err != nil {
+		log.Println("[ERROR] Failed to unmarshal message")
+	}
+	return msg, err
 }
 
 // Sends an activate message with the specified active nodes over the given
