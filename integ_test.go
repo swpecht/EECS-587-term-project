@@ -42,24 +42,24 @@ func TestMemberList(t *testing.T) {
 	assert.True(client2.IsActive())
 	assert.True(client3.IsActive())
 
-}
-
-func TestJoining(t *testing.T) {
 	// Can only join when not already part of a group
 	// Test the requirements for all nodes to agree on adding active members
-	// client4, _ := factory.NewClient()
-	// client4.Join([]string{headName})
+	// Tests the barrier functionality
+	client4, _ := factory.NewClient()
+	defer client3.Close()
+	client4.Join([]string{headName})
 
-	// go client.UpdateActiveMembers()
-	// assert.Equal(3, client2.NumActiveMembers(), "Allowed actives to join early")
+	go client.UpdateActiveMembers()
+	assert.Equal(3, client2.NumActiveMembers(), "Allowed actives to join early")
 
-	// go client2.UpdateActiveMembers()
-	// go client3.UpdateActiveMembers()
+	go client2.UpdateActiveMembers()
+	go client3.UpdateActiveMembers()
 
-	// assert.Equal(4, client.NumActiveMembers(),
-	// 	"New member not allowed to be active")
+	assert.Equal(4, client.NumActiveMembers(),
+		"New member not allowed to be active")
 
-	//t.Errorf("Not implemented.")
+	t.Errorf("Not implemented.")
+
 }
 
 func TestActiveStatus(t *testing.T) {

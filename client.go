@@ -104,7 +104,6 @@ func (c *client) updateActiveMemberList(members []Node) {
 
 	for i := range members {
 		c.ActiveMembers[members[i].Name] = members[i]
-		log.Println("[DEBUG] Active member " + strconv.Itoa(i) + " " + members[i].Name)
 	}
 	c.ActiveMembersLock.Unlock()
 
@@ -131,6 +130,21 @@ func (c *client) Barrier() {
 }
 
 // Send message to all nodes
+// TODO implement a tree rather than naive send to all
 func (c *client) Broadcast(stringData []string, floatData []float64) {
+	c.ActiveMembersLock.Lock()
+	for _, node := range c.ActiveMembers {
+		tcpConn, err := c.getTCPConection(node)
+		tcpAddr := node.GetTCPAddr()
+		if err != nil {
+			log.Println("[ERROR] Failed to broadcast message to ", tcpAddr.String())
+		}
+		msg := CreateBroadcastMsg(stringData, floatData)
+		err = sendMessage(tcpConn, msg)
+		if err != nil {
+			log.Println("[ERROR] Failed to broadcast message to ", tcpAddr.String())
+		}
+	}
 
+	c.ActiveMembersLock.Unlock()
 }

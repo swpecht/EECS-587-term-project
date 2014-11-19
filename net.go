@@ -20,6 +20,7 @@ const (
 	activateMsg messageType = iota
 	ackMsg
 	broadcastMsg
+	barrierMsg
 )
 
 // Messages are sent with the first byte being the message type
@@ -131,15 +132,28 @@ func (c *client) activatePendingMembers() {
 	// TODO implement some logic here so everyone does send to the
 	// new members
 	for i := 0; i < len(pending_members); i++ {
+		tcp_conn, _ := c.getTCPConection(pending_members[i])
 		tcpAddr := pending_members[i].GetTCPAddr()
-		tcp_conn, _ := net.DialTCP("tcp", nil, &tcpAddr)
+
 		sendMessage(tcp_conn, msg)
-		log.Println("[DEBUG] Activate message sent to: " + tcpAddr.String())
+		log.Println("[DEBUG] Activate message sent to: ", tcpAddr.String())
 	}
 
 	// Update the active members on the local node
 	log.Println("[DEBUG] Total active nodes: " + strconv.Itoa(len(activeMembers)))
 	c.updateActiveMemberList(activeMembers)
+}
+
+// Returns a connection to the specified node
+// TODO use a connection pool for speed
+func (c *client) getTCPConection(node Node) (*net.TCPConn, error) {
+	tcpAddr := node.GetTCPAddr()
+	tcp_conn, err := net.DialTCP("tcp", nil, &tcpAddr)
+	if err != nil {
+		log.Println("[ERROR] Failed to get tcp connection to ", node.GetTCPAddr())
+	}
+
+	return tcp_conn, err
 }
 
 // handleConn handles a single incoming TCP connection
@@ -148,7 +162,7 @@ func handleConn(c *net.TCPConn, channel chan Message) {
 	if err != nil {
 		log.Println("[ERROR] Failed to rcvmessage: " + err.Error())
 	}
-	log.Println("[DEBUG] Message recieved.")
+	log.Println("[DEBUG] Message recieved ", msg)
 	channel <- msg
 }
 
