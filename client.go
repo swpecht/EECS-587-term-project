@@ -11,8 +11,8 @@ type client struct {
 	ActiveMembers  map[string]Node        // Members that are online and active, mapped by the memberlist.Node.Name
 	Name           string                 // Unique name of the client
 	node           Node                   // Used for TCP communications
-
-	tcpListener *net.TCPListener
+	MsgChannel     chan Message
+	tcpListener    *net.TCPListener
 }
 
 func (c client) NotifyJoin(n *memberlist.Node) {
@@ -62,7 +62,7 @@ func (c *client) Join(addresses []string) (int, error) {
 func (c *client) UpdateActiveMembers() int {
 	// Need to ensure all active members have decided to do this
 	c.Barrier()
-
+	c.activatePendingMembers()
 	// Need to send go ahead message to new members to be made active
 	return c.NumActiveMembers()
 }
@@ -80,13 +80,12 @@ func (c *client) Barrier() {
 	}
 	if len(c.ActiveMembers) == 1 {
 		// This is the only member so can return instantly
-		//
 		return
 	}
 	return
 }
 
 // Send message to all nodes
-func (c *client) Broadcast(msg string) {
+func (c *client) Broadcast(stringData []string, floatData []float64) {
 
 }

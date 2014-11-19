@@ -60,32 +60,56 @@ func CreateBroadcastMsg(stringData []string, floatData []float64) Message {
 	return msg
 }
 
+// Creates an activate message, where the first member of the string array
+// contains an array of nodes
+func createActivateMsg(activeMembers []Node) (Message, error) {
+	nodesBytes, err := json.Marshal(activeMembers)
+	if err != nil {
+		log.Println("[ERROR] Failed to marshal nodes")
+	}
+	nodesString := string(nodesBytes)
+	msg := Message{
+		Type:       activateMsg,
+		StringData: []string{nodesString},
+	}
+
+	return msg, err
+}
+
 // tcpListen listens for and handles incoming connections
-func (c *client) tcpListen() {
+func (c *client) tcpListen(channel chan Message) {
 	for {
-		// conn, _ := c.tcpListener.AcceptTCP()
-		// go handleConn(conn)
+		conn, err := c.tcpListener.AcceptTCP()
+		if err != nil {
+			log.Fatal(err)
+		}
+		go handleConn(conn, channel)
 	}
 }
 
-// // Activates all pending members
-// func (c *client) activatePendingMembers() {
-// 	// TODO implement locks for this
-// 	pending_members := *c.pendingMembers
-// 	activeMembers := make([]Node, len(c.ActiveMembers)+len(pending_members))
+// Activates all pending members
+func (c *client) activatePendingMembers() {
+	// TODO implement locks for this
+	pending_members := *c.pendingMembers
+	activeMembers := make([]Node, len(c.ActiveMembers)+len(pending_members))
 
-// 	activeMembers = append(activeMembers, pending_members...)
+	// Create the appended list of active members
+	activeMembers = append(activeMembers, pending_members...)
+	for _, value := range c.ActiveMembers {
+		activeMembers = append(activeMembers, value)
+	}
 
-// 	for _, value := range c.ActiveMembers {
-// 		activeMembers = append(activeMembers, value)
-// 	}
+	msg, _ := createActivateMsg(activeMembers)
 
-// 	for i := 0; i < len(pending_members); i++ {
-// 		tcpAddr := pending_members[i].GetTCPAddr()
-// 		tcp_conn, _ := net.DialTCP("tcp", nil, &tcpAddr)
-// 		c.sendActivateMessage(tcp_conn, activeMembers)
-// 	}
-// }
+	// TODO implement some logic here so everyone does send to the
+	// new members
+	for i := 0; i < len(pending_members); i++ {
+		tcpAddr := pending_members[i].GetTCPAddr()
+		tcp_conn, _ := net.DialTCP("tcp", nil, &tcpAddr)
+		sendMessage(tcp_conn, msg)
+		log.Println("[DEBUG] Activate message sent to: " + tcpAddr.String())
+	}
+}
 
 // handleConn handles a single incoming TCP connection
 func handleConn(c *net.TCPConn, channel chan Message) {
@@ -93,6 +117,7 @@ func handleConn(c *net.TCPConn, channel chan Message) {
 	if err != nil {
 		log.Println("[ERROR] Failed to rcvmessage: " + err.Error())
 	}
+	log.Println("[DEBUG] Message recieved.")
 	channel <- msg
 }
 

@@ -17,12 +17,12 @@ type ClientFactory struct {
 
 func (f *ClientFactory) NewClient() (c client, err error) {
 	c = client{}
+	// Initialize variables
 	c.ActiveMembers = make(map[string]Node)
 	c.pendingMembers = new([]Node)
-	//c.EventChannel = &make(chan event)
-	// Start event processing
-	// go c.processEvents()
+	c.MsgChannel = make(chan Message)
 
+	// Configure the MemberList
 	var config *memberlist.Config = memberlist.DefaultLocalConfig()
 	config.BindPort = memberlist_starting_port + f.num_created
 	c.Name = config.Name + ":" + strconv.Itoa(memberlist_starting_port) + "-" + strconv.Itoa(f.num_created)
@@ -33,9 +33,9 @@ func (f *ClientFactory) NewClient() (c client, err error) {
 	if err != nil {
 		return
 	}
-
 	c.memberList = list
 
+	// Configure the local Node data
 	c.node = Node{
 		Addr: net.ParseIP(config.BindAddr),
 		Port: config.BindPort + tcp_offset,
@@ -46,6 +46,8 @@ func (f *ClientFactory) NewClient() (c client, err error) {
 	if err != nil {
 		return
 	}
+	// Start the TCP listener
+	go c.tcpListen(c.MsgChannel)
 
 	f.num_created += 1
 
