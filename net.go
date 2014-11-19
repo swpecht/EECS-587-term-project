@@ -101,7 +101,9 @@ func (c *client) tcpListen(channel chan Message) {
 	for {
 		conn, err := c.tcpListener.AcceptTCP()
 		if err != nil {
-			log.Fatal(err)
+			log.Println("[Debug] Closing listener")
+			c.Close()
+			break
 		}
 		go handleConn(conn, channel)
 	}

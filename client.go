@@ -19,8 +19,6 @@ type client struct {
 	node               Node            // Used for TCP communications
 	MsgChannel         chan Message
 	tcpListener        *net.TCPListener
-
-	closed chan bool
 }
 
 func (c client) NotifyJoin(n *memberlist.Node) {
