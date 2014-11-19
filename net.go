@@ -24,7 +24,7 @@ const (
 // into the appropriate message type.
 type Message struct {
 	Type messageType
-	Data []byte
+	Data string
 }
 
 // Encodes a messafe for sending over a tcp connection. Format is:
@@ -34,7 +34,7 @@ func (msg Message) Enconde() (outputMsg string, err error) {
 
 	msgLen := len(msgBody)
 	outputMsg = strconv.Itoa(msgLen) + string('\n')
-	outputMsg += string(msgBody)
+	outputMsg += string(msgBody) + string('\n')
 
 	return
 }
@@ -97,7 +97,7 @@ func (c *client) sendActivateMessage(conn *net.TCPConn, activeNodes []Node) erro
 	if err != nil {
 		return err
 	}
-	msg := Message{Type: activateMsg, Data: b}
+	msg := Message{Type: activateMsg, Data: string(b)}
 	return sendMessage(conn, msg)
 }
 

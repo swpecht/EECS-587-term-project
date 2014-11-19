@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"testing"
+	"time"
 )
 
 func TestSendMessage(t *testing.T) {
@@ -28,7 +29,7 @@ func TestSendMessage(t *testing.T) {
 
 	msg := Message{
 		Type: activateMsg,
-		Data: []byte("Hello World"),
+		Data: "Hello World",
 	}
 
 	err = sendMessage(remoteConn, msg)
@@ -36,10 +37,15 @@ func TestSendMessage(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 
+	go func() {
+		time.Sleep(1 * time.Second)
+		c <- "DATA"
+	}()
 	dataReceived := <-c
-
-	log.Println("[DEBUG] " + dataReceived)
-	t.Error("Not implemented")
+	log.Println("[DEBUG] Recieved: " + dataReceived)
+	if dataReceived == "DATA" {
+		t.Error("Timed out!")
+	}
 
 }
 
@@ -61,10 +67,26 @@ func HandleIncomeing(l *net.TCPListener, c chan string) {
 			reader := bufio.NewReader(conn)
 			data, err := reader.ReadString('\n')
 			if err != nil {
-				log.Println("[ERROR] Failed read")
+				log.Println("[ERROR] Failed to read message length")
 			}
+			// length, _ := strconv.Atoi(data)
+			// b := make([]byte, length)
+			// buffer := make([]byte, length)
+			// for bytesRead := 0; bytesRead < length; {
+			// 	n, err := reader.Read(buffer)
+			// 	if err != nil {
+			// 		log.Println("[ERROR] Failed read message")
+			// 	}
+			// 	b[bytesRead : bytesRead+n] = buffer
+			// 	bytesRead += n
+			// }
+
+			data, err = reader.ReadString('\n')
+			if err != nil {
+				log.Println("[ERROR] Failed to read message")
+			}
+
 			stringData := data
-			log.Println("[DEBUG] Recieved: " + stringData)
 			channel <- stringData
 		}(conn, c)
 	}
