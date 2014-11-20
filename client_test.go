@@ -21,6 +21,7 @@ func NewMockMessenger() (Messenger, chan Message) {
 	}, msgChan
 }
 
+// Add the message to the sent queue
 func (messenger MockMessenger) Send(msg Message) error {
 	messenger.sentMessages <- msg
 	return nil
@@ -116,7 +117,9 @@ func TestClient_Barrier(t *testing.T) {
 	for i := 0; i < len(activeNodes); i++ {
 		msg := <-sent
 		assert.Equal(barrierMsg, msg.Type)
-		assert.Equal(activeNodes[i].Addr.String(), msg.Target)
+		node := activeNodes[i]
+		tcpAddr := node.GetTCPAddr()
+		assert.Equal(tcpAddr.String(), msg.Target)
 	}
 
 	c.HandleMessage(GetBarrierMessage(t, activeNodes[0].Name))
@@ -144,6 +147,38 @@ func TestClient_HandleActivate(t *testing.T) {
 
 }
 
+func TestClient_UpdateActiveMembers(t *testing.T) {
+	assert := assert.New(t)
+	timer := time.AfterFunc(500*time.Millisecond, func() {
+		panic("Hung during UpdateActiveMembers test!")
+	})
+	defer timer.Stop()
+
+	c := GetClient_DataOnly(t)
+
+	messenger, sent := NewMockMessenger()
+	c.messenger = messenger
+	activeNodes := []Node{c.node}
+	pendingNodes := []Node{GetNode(t), GetNode(t)}
+
+	c.updateActiveMemberList(activeNodes)
+	c.pendingMembers = &pendingNodes
+	// nodesToNotify := append(activeNodes, pendingNodes...)
+	go c.UpdateActiveMembers()
+
+	// Should send messages to both pending and active
+	for i := 0; i < len(pendingNodes); i++ {
+		msg := <-sent
+		node := pendingNodes[i]
+		tcpAddr := node.GetTCPAddr()
+		assert.Equal(tcpAddr.String(), msg.Target)
+		assert.Equal(activateMsg, msg.Type)
+
+	}
+
+	t.Errorf("Not Implemented")
+}
+
 func TestClient_Close(t *testing.T) {
 	t.Errorf("Not Implemented")
 }
@@ -164,8 +199,10 @@ func TestClient_Broadcast(t *testing.T) {
 	// Should send 3 messages
 	for i := 0; i < len(activeNodes); i++ {
 		msg := <-sent
+		node := activeNodes[i]
+		tcpAddr := node.GetTCPAddr()
+		assert.Equal(tcpAddr.String(), msg.Target)
 		assert.Equal(broadcastMsg, msg.Type)
-		assert.Equal(activeNodes[i].Addr.String(), msg.Target)
 		assert.Equal(stringData, msg.StringData)
 		assert.Equal(floatData, msg.FloatData)
 	}

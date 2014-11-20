@@ -95,7 +95,7 @@ func (c *client) activatePendingMembers() {
 	// new members
 	for i := 0; i < len(pending_members); i++ {
 		tcpAddr := pending_members[i].GetTCPAddr()
-
+		msg.Target = tcpAddr.String()
 		c.messenger.Send(msg)
 		log.Println("[DEBUG] Activate message sent to: ", tcpAddr.String())
 	}

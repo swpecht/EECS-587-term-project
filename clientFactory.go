@@ -15,10 +15,10 @@ type ClientFactory struct {
 	num_created int
 }
 
-func (f *ClientFactory) NewClient() (c client, err error) {
+func (f *ClientFactory) NewClient(messenger Messenger) (c client, err error) {
 	c = client{}
 	f.initializeData(&c)
-	f.initializeChannelMessenger(&c)
+	c.messenger = messenger
 	f.startMessageHandling(&c)
 	err = f.initializeMemberList(&c)
 	if err != nil {

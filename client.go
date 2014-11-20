@@ -194,11 +194,12 @@ func (c *client) broadCastMsg(msg Message) {
 	c.ActiveMembersLock.Lock()
 	log.Println("[DEBUG] Broadcasting message to", len(c.ActiveMembers), "nodes")
 	for _, node := range c.ActiveMembers {
-		msg.Target = node.Addr.String()
+		tcpAddr := node.GetTCPAddr()
+		msg.Target = tcpAddr.String()
 
 		err := c.messenger.Send(msg)
 		if err != nil {
-			log.Println("[ERROR] Failed to broadcast message to ", node.Addr.String())
+			log.Println("[ERROR] Failed to broadcast message to ", tcpAddr.String())
 		}
 	}
 	c.ActiveMembersLock.Unlock()
