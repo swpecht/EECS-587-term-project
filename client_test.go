@@ -28,7 +28,6 @@ func GetClient_DataOnly(t *testing.T) *client {
 	c := new(client)
 	f := ClientFactory{}
 	f.initializeData(c)
-	f.startMessageHandling(c)
 
 	c.ActiveMembers[c.node.Name] = c.node
 	return c
@@ -59,11 +58,6 @@ func TestClient_IsActive(t *testing.T) {
 
 }
 
-// http://stackoverflow.com/questions/19167970/mock-functions-in-golang
-// Good thoughts on how to mock out the messageing
-// https://eclipse.org/paho/clients/golang/
-// http://golang.org/pkg/net/textproto/
-// Good messaging library
 func TestClient_Barrier_Blocking(t *testing.T) {
 	t.Errorf("Not Implemented")
 }

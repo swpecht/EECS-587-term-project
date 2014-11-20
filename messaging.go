@@ -147,6 +147,11 @@ func (l *Listener) Stop() error {
 }
 
 // Messenger over TCP
+// http://stackoverflow.com/questions/19167970/mock-functions-in-golang
+// Good thoughts on how to mock out the messageing
+// https://eclipse.org/paho/clients/golang/
+// http://golang.org/pkg/net/textproto/
+// Good messaging library
 type TCPMessenger struct {
 }
 

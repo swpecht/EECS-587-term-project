@@ -50,7 +50,8 @@ func (f *ClientFactory) initializeData(c *client) {
 
 func (f *ClientFactory) initializeChannelMessenger(c *client) {
 	c.messenger = ChannelMessenger{
-		Incoming: make(chan Message),
+		Incoming:    make(chan Message),
+		ResolverMap: make(map[string]chan Message),
 	}
 }
 
