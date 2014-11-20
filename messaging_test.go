@@ -88,26 +88,25 @@ func TestMessaging_Listener(t *testing.T) {
 		Target:     "Messenger1",
 		StringData: []string{"Listener test"},
 	}
-	recvrChannel := make(chan Message)
 
-	l := NewListener()
+	var msgHandler MessageHandler = func(msg Message) {
+		assert.Equal(msgTo1, msg)
+	}
+
+	l := NewListener(msgHandler)
 	// Test early stop
 	err := l.Stop()
 	if err == nil {
 		t.Error("Failed to detect early stop")
 	}
-	go l.Listen(messenger1, recvrChannel)
+	go l.Listen(messenger1)
 
 	// Should immediately allow sending both messages
 	messenger0.Send(msgTo1)
 	messenger0.Send(msgTo1)
-	msgRecvd := <-recvrChannel
-	assert.Equal(msgTo1, msgRecvd)
-	msgRecvd = <-recvrChannel
-	assert.Equal(msgTo1, msgRecvd)
 
 	// Test starting listener twice
-	err = l.Listen(messenger1, recvrChannel)
+	err = l.Listen(messenger1)
 	if err == nil {
 		t.Error("Allowed listener to be started twice")
 	}
@@ -120,5 +119,5 @@ func TestMessaging_Listener(t *testing.T) {
 	})
 
 	// Is blocking, if stop is not called, it will time out
-	l.Listen(messenger1, recvrChannel)
+	l.Listen(messenger1)
 }

@@ -79,19 +79,23 @@ func (messenger ChannelMessenger) resolve(addr string) (interface{}, error) {
 type Listener struct {
 	sync.Mutex // Embedded lock
 	// Channel to determe if the listener was stopped
-	stop      chan bool
-	isRunning bool
+	stop          chan bool
+	isRunning     bool
+	HandleMessage MessageHandler
 }
 
-func NewListener() Listener {
+type MessageHandler func(msg Message)
+
+func NewListener(msgHandler MessageHandler) Listener {
 	return Listener{
-		isRunning: false,
-		stop:      make(chan bool),
+		isRunning:     false,
+		stop:          make(chan bool),
+		HandleMessage: msgHandler,
 	}
 }
 
 // Blocking call that polls for call
-func (l *Listener) Listen(messenger Messenger, output chan Message) error {
+func (l *Listener) Listen(messenger Messenger) error {
 	l.Lock()
 	if l.isRunning == true {
 		log.Println("[ERROR] Attempt to start listener while running")
@@ -105,7 +109,7 @@ func (l *Listener) Listen(messenger Messenger, output chan Message) error {
 	recvChan := make(chan Message)
 	for {
 		go messenger.Recv(recvChan)
-		stopped := l.waitForRecvOrStop(recvChan, output)
+		stopped := l.waitForRecvOrStop(recvChan)
 		if stopped == true {
 			log.Println("[DEBUG] Stop received for listener")
 			close(recvChan)
@@ -116,13 +120,13 @@ func (l *Listener) Listen(messenger Messenger, output chan Message) error {
 }
 
 // Waits for a message ot be recieved or the stop signal to be sent
-func (l *Listener) waitForRecvOrStop(recv chan Message, output chan Message) bool {
+func (l *Listener) waitForRecvOrStop(recv chan Message) bool {
 	for {
 		select {
 		case <-l.stop:
 			return true
 		case msg := <-recv:
-			go func() { output <- msg }()
+			go func() { l.HandleMessage(msg) }()
 			return false
 		}
 	}
