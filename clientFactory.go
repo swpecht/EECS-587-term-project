@@ -38,11 +38,11 @@ func (f *ClientFactory) initializeData(c *client) {
 	// Initialize variables
 	c.ActiveMembers = make(map[string]Node)
 	c.pendingMembers = new([]Node)
-	c.msgChannel = make(chan Message)
+	c.msgIncoming = make(chan Message)
+	c.msgOutgoing = make(chan Message)
 	c.closeChannel = make(chan bool)
 	c.barrierChannel = make(chan string)
 	c.activateChannel = make(chan Message)
-	c.connectionPool = make(map[string]*net.TCPConn)
 
 	var config *memberlist.Config = memberlist.DefaultLocalConfig()
 	c.Name = config.Name + ":" + strconv.Itoa(memberlist_starting_port) + "-" + strconv.Itoa(f.num_created)
@@ -65,14 +65,14 @@ func (f *ClientFactory) startActivateHandling(c *client) {
 }
 
 func (f *ClientFactory) initializeTCPListener(c *client) error {
-	tcpAddr := c.node.GetTCPAddr()
-	var err error
-	c.tcpListener, err = net.ListenTCP("tcp", &tcpAddr)
-	if err != nil {
-		return err
-	}
-	// Start the TCP listener
-	go tcpListen(c.tcpListener, c.msgChannel)
+	// tcpAddr := c.node.GetTCPAddr()
+	// var err error
+	// // c.tcpListener, err = net.ListenTCP("tcp", &tcpAddr)
+	// if err != nil {
+	// 	return err
+	// }
+	// // Start the TCP listener
+	// go tcpListen(c.tcpListener, c.msgChannel)
 	return nil
 }
 

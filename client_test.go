@@ -68,7 +68,7 @@ func TestClient_HandleMessages(t *testing.T) {
 	// Start message handling for this test
 	f.startMessageHandling(c)
 
-	msgChannel := c.msgChannel
+	msgChannel := c.msgIncoming
 
 	timer := time.AfterFunc(100*time.Millisecond, func() {
 		panic("should have timed out by now")
@@ -91,6 +91,9 @@ func TestClient_HandleMessages(t *testing.T) {
 
 // http://stackoverflow.com/questions/19167970/mock-functions-in-golang
 // Good thoughts on how to mock out the messageing
+// https://eclipse.org/paho/clients/golang/
+// http://golang.org/pkg/net/textproto/
+// Good messaging library
 func TestClient_Barrier_Blocking(t *testing.T) {
 	t.Errorf("Not Implemented")
 }

@@ -3,7 +3,6 @@ package DUP
 import (
 	"github.com/hashicorp/memberlist"
 	"log"
-	"net"
 	"strconv"
 	"sync"
 )
@@ -18,14 +17,12 @@ type client struct {
 	Name               string          // Unique name of the client
 	node               Node            // Used for TCP communications
 
-	msgChannel  chan Message // Main channel on which to receive messages
-	tcpListener *net.TCPListener
+	msgIncoming chan Message // Main channel on which to receive messages
+	msgOutgoing chan Message // channel on which to send messages
 
 	barrierChannel  chan string // The channel that handles barrier message, will be the name of the node that sent the barrier
 	activateChannel chan Message
 	closeChannel    chan bool // channel to stop processing messages
-
-	connectionPool map[string]*net.TCPConn
 }
 
 func (c client) NotifyJoin(n *memberlist.Node) {
@@ -85,7 +82,7 @@ func (c *client) startMessageHandling() {
 		select {
 		case <-c.closeChannel:
 			break // done processing
-		case msg := <-c.msgChannel:
+		case msg := <-c.msgIncoming:
 			log.Println("[DEBUG]", c.node.Name, " Message received", msg)
 			switch msg.Type {
 			case activateMsg:
@@ -126,11 +123,11 @@ func (c *client) handleActivateMessage(msg Message) {
 }
 
 func (c *client) Close() {
-	c.tcpListener.Close()
+	// c.tcpListener.Close()
 	c.memberList.Shutdown()
 	c.closeChannel <- true
 	// Not totally sure how closing channels works TODO
-	close(c.msgChannel) // Let all blocked processes finish
+	close(c.msgIncoming) // Let all blocked processes finish
 	close(c.barrierChannel)
 }
 

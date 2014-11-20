@@ -4,10 +4,60 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"net"
 )
+
+type Messenger interface {
+	Send(msg Message) error
+	Recv(channel chan Message) error
+	resolve(addr string) (interface{}, error)
+}
+
+type ChannelMessenger struct {
+	ResolverMap map[string]chan Message // Used by the resolver function to send messages
+	Incoming    chan Message
+}
+
+func (messenger *ChannelMessenger) Send(msg Message) error {
+	var resolved interface{}
+	resolved, err := messenger.resolve(msg.Target)
+	if err != nil {
+		return err
+	}
+	targetChan, ok := resolved.(chan Message)
+	if !ok || targetChan == nil {
+		errorMsg := "Failed to convert the resolved value to a channel"
+		err = errors.New(errorMsg)
+		log.Println("[ERROR]", errorMsg, resolved)
+		return err
+	}
+
+	log.Println("[DEBUG] Sending message", msg, "over", targetChan)
+	targetChan <- msg
+	return nil
+}
+
+func (messenger *ChannelMessenger) Recv(channel chan Message) error {
+	log.Println("[DEBUG] Waiting on receive on", messenger.Incoming)
+	incomingMessage := <-messenger.Incoming
+	log.Println("[DEBUG] Message received", incomingMessage)
+	channel <- incomingMessage
+	return nil
+}
+
+func (messenger *ChannelMessenger) resolve(addr string) (interface{}, error) {
+	channel, ok := messenger.ResolverMap[addr]
+	var err error
+	if !ok {
+		log.Println("[ERROR] Failed to resolve", addr)
+		err = errors.New("Address not found!")
+	}
+	log.Println("[DEBUG] Resolved", addr, "to", channel)
+	return channel, err
+}
 
 // tcpListen listens for and handles incoming connections
 func tcpListen(listener *net.TCPListener, channel chan Message) {
@@ -24,6 +74,7 @@ func tcpListen(listener *net.TCPListener, channel chan Message) {
 
 type Message struct {
 	Type       messageType
+	Target     string
 	StringData []string
 	FloatData  []float64
 }

@@ -109,18 +109,11 @@ func (c *client) activatePendingMembers() {
 // Returns a connection to the specified node
 // TODO use a connection pool for speed
 func (c *client) getTCPConection(node Node) (*net.TCPConn, error) {
-	tcp_con, ok := c.connectionPool[node.Name]
-	// If already have one
-	if ok {
-		return tcp_con, nil
-	}
 
 	tcpAddr := node.GetTCPAddr()
 	tcp_conn, err := net.DialTCP("tcp", nil, &tcpAddr)
 	if err != nil {
 		log.Println("[ERROR] Failed to get tcp connection to ", node.GetTCPAddr())
-	} else {
-		c.connectionPool[node.Name] = tcp_con
 	}
 
 	return tcp_conn, err
