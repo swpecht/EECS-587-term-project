@@ -176,7 +176,6 @@ func TestClient_UpdateActiveMembers(t *testing.T) {
 
 	}
 
-	t.Errorf("Not Implemented")
 }
 
 func TestClient_Close(t *testing.T) {
