@@ -117,18 +117,3 @@ func (c *client) getTCPConection(node Node) (*net.TCPConn, error) {
 
 	return tcp_conn, err
 }
-
-func (c *client) broadCastMsg(msg Message) {
-	c.ActiveMembersLock.Lock()
-	log.Println("[DEBUG] Broadcasting message to", len(c.ActiveMembers), "nodes")
-	for _, node := range c.ActiveMembers {
-		tcpAddr := node.GetTCPAddr()
-
-		err := c.messenger.Send(msg)
-		if err != nil {
-			log.Println("[ERROR] Failed to broadcast message to ", tcpAddr.String())
-		}
-	}
-	c.ActiveMembersLock.Unlock()
-
-}

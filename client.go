@@ -189,3 +189,18 @@ func (c *client) Broadcast(stringData []string, floatData []float64) {
 	msg := CreateBroadcastMsg(stringData, floatData)
 	c.broadCastMsg(msg)
 }
+
+func (c *client) broadCastMsg(msg Message) {
+	c.ActiveMembersLock.Lock()
+	log.Println("[DEBUG] Broadcasting message to", len(c.ActiveMembers), "nodes")
+	for _, node := range c.ActiveMembers {
+		msg.Target = node.Addr.String()
+
+		err := c.messenger.Send(msg)
+		if err != nil {
+			log.Println("[ERROR] Failed to broadcast message to ", node.Addr.String())
+		}
+	}
+	c.ActiveMembersLock.Unlock()
+
+}

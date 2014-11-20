@@ -116,6 +116,7 @@ func TestClient_Barrier(t *testing.T) {
 	for i := 0; i < len(activeNodes); i++ {
 		msg := <-sent
 		assert.Equal(barrierMsg, msg.Type)
+		assert.Equal(activeNodes[i].Addr.String(), msg.Target)
 	}
 
 	c.HandleMessage(GetBarrierMessage(t, activeNodes[0].Name))
@@ -148,5 +149,25 @@ func TestClient_Close(t *testing.T) {
 }
 
 func TestClient_Broadcast(t *testing.T) {
-	t.Errorf("Not Implemented")
+	assert := assert.New(t)
+	c := GetClient_DataOnly(t)
+
+	messenger, sent := NewMockMessenger()
+	c.messenger = messenger
+	activeNodes := []Node{GetNode(t), GetNode(t), c.node}
+	c.updateActiveMemberList(activeNodes)
+
+	stringData := []string{"Hello", "World"}
+	floatData := []float64{2.0, 48182.2}
+	go c.Broadcast(stringData, floatData)
+
+	// Should send 3 messages
+	for i := 0; i < len(activeNodes); i++ {
+		msg := <-sent
+		assert.Equal(broadcastMsg, msg.Type)
+		assert.Equal(activeNodes[i].Addr.String(), msg.Target)
+		assert.Equal(stringData, msg.StringData)
+		assert.Equal(floatData, msg.FloatData)
+	}
+
 }
