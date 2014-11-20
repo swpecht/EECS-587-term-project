@@ -7,6 +7,33 @@ import (
 	"testing"
 )
 
+// Mock messenger for client tests. Collects all sent messages into a channel
+// Does no resolving. Has a capacity for 50 sent messages
+type MockMessenger struct {
+	sentMessages chan Message
+}
+
+func NewMockMessenger() (Messenger, chan Message) {
+	msgChan := make(chan Message, 50)
+	return MockMessenger{
+		sentMessages: msgChan,
+	}, msgChan
+}
+
+func (messenger MockMessenger) Send(msg Message) error {
+	messenger.sentMessages <- msg
+	return nil
+}
+
+func (messenger MockMessenger) Recv(channel chan Message) error {
+	return nil
+}
+
+// Does nothing
+func (messenger MockMessenger) resolve(addr string) (interface{}, error) {
+	return nil, nil
+}
+
 var nodeNumLock sync.Mutex
 var nodeNum int = 0
 
