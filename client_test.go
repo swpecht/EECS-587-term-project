@@ -5,6 +5,7 @@ import (
 	"net"
 	"sync"
 	"testing"
+	"time"
 )
 
 // Mock messenger for client tests. Collects all sent messages into a channel
@@ -85,8 +86,43 @@ func TestClient_IsActive(t *testing.T) {
 
 }
 
-func TestClient_Barrier_Blocking(t *testing.T) {
-	t.Errorf("Not Implemented")
+func TestClient_Barrier(t *testing.T) {
+	assert := assert.New(t)
+	timer := time.AfterFunc(500*time.Millisecond, func() {
+		panic("Hung during barrier test!")
+	})
+	defer timer.Stop()
+
+	c := GetClient_DataOnly(t)
+
+	// Test single client case, only active node, should return immediately
+	c.Barrier()
+
+	// Test with multiple active nodes
+	messenger, sent := NewMockMessenger()
+	c.messenger = messenger
+	activeNodes := []Node{GetNode(t), GetNode(t), c.node}
+	c.updateActiveMemberList(activeNodes)
+
+	blocked := false
+	go func() {
+		c.Barrier()
+		if !blocked {
+			t.Error("Barrier didn't block")
+		}
+
+	}()
+	// Should send 3 messages
+	for i := 0; i < len(activeNodes); i++ {
+		msg := <-sent
+		assert.Equal(barrierMsg, msg.Type)
+	}
+
+	c.HandleMessage(GetBarrierMessage(t, activeNodes[0].Name))
+	c.HandleMessage(GetBarrierMessage(t, activeNodes[1].Name))
+	blocked = true
+	c.HandleMessage(GetBarrierMessage(t, activeNodes[2].Name))
+
 }
 
 func TestClient_HandleActivate(t *testing.T) {
@@ -108,5 +144,9 @@ func TestClient_HandleActivate(t *testing.T) {
 }
 
 func TestClient_Close(t *testing.T) {
+	t.Errorf("Not Implemented")
+}
+
+func TestClient_Broadcast(t *testing.T) {
 	t.Errorf("Not Implemented")
 }
