@@ -17,11 +17,11 @@ func (handler MockMessageHandler) HandleMessage(msg Message) {
 	assert.Equal(handler.expected, msg)
 }
 
-func GetChannelMessengers(num int) []ChannelMessenger {
+// Returns the ChannelMessengers and adds them all to the supplied resolver map.
+func GetChannelMessengers(num int, resolverMap map[string]chan Message) []ChannelMessenger {
 	messengers := make([]ChannelMessenger, num)
 
 	// Generate resolver map
-	resolverMap := make(map[string]chan Message)
 	for i := 0; i < num; i++ {
 		name := "Messenger" + strconv.Itoa(i)
 		channel := make(chan Message)
@@ -33,10 +33,7 @@ func GetChannelMessengers(num int) []ChannelMessenger {
 
 	// Update the messengers resolver map
 	for i := 0; i < num; i++ {
-		messengers[i].ResolverMap = make(map[string]chan Message)
-		for k, v := range resolverMap {
-			messengers[i].ResolverMap[k] = v
-		}
+		messengers[i].ResolverMap = resolverMap
 	}
 
 	return messengers
@@ -44,7 +41,8 @@ func GetChannelMessengers(num int) []ChannelMessenger {
 
 func TestMessaging_ChannelMesseger(t *testing.T) {
 	assert := assert.New(t)
-	messengers := GetChannelMessengers(2)
+	resolverMap := make(map[string]chan Message)
+	messengers := GetChannelMessengers(2, resolverMap)
 	messenger0 := messengers[0]
 	messenger1 := messengers[1]
 
@@ -90,7 +88,8 @@ func TestMessaging_Listener(t *testing.T) {
 	defer timeout.Stop()
 
 	assert := assert.New(t)
-	messengers := GetChannelMessengers(2)
+	resolverMap := make(map[string]chan Message)
+	messengers := GetChannelMessengers(2, resolverMap)
 	messenger0 := messengers[0]
 	messenger1 := messengers[1]
 

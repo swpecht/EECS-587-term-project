@@ -10,7 +10,8 @@ import (
 func GetClients(t *testing.T, num int, headName string) []client {
 	factory := ClientFactory{}
 
-	messengers := GetChannelMessengers(num)
+	resolverMap := make(map[string]chan Message)
+	messengers := GetChannelMessengers(2, resolverMap)
 	clients := make([]client, num)
 	var err error
 
