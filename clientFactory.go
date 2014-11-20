@@ -23,6 +23,7 @@ func (f *ClientFactory) NewClient() (c client, err error) {
 		return c, err
 	}
 	f.startMessageHandling(&c)
+	f.startActivateHandling(&c)
 	err = f.initializeMemberList(&c)
 	if err != nil {
 		return c, err
@@ -40,6 +41,7 @@ func (f *ClientFactory) initializeData(c *client) {
 	c.msgChannel = make(chan Message)
 	c.closeChannel = make(chan bool)
 	c.barrierChannel = make(chan string)
+	c.activateChannel = make(chan Message)
 	c.connectionPool = make(map[string]*net.TCPConn)
 
 	var config *memberlist.Config = memberlist.DefaultLocalConfig()
@@ -56,6 +58,10 @@ func (f *ClientFactory) initializeData(c *client) {
 // Start event processing
 func (f *ClientFactory) startMessageHandling(c *client) {
 	go c.startMessageHandling()
+}
+
+func (f *ClientFactory) startActivateHandling(c *client) {
+	go c.startActivateHandling()
 }
 
 func (f *ClientFactory) initializeTCPListener(c *client) error {

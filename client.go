@@ -21,8 +21,9 @@ type client struct {
 	msgChannel  chan Message // Main channel on which to receive messages
 	tcpListener *net.TCPListener
 
-	barrierChannel chan string // The channel that handles barrier message, will be the name of the node that sent the barrier
-	closeChannel   chan bool   // channel to stop processing messages
+	barrierChannel  chan string // The channel that handles barrier message, will be the name of the node that sent the barrier
+	activateChannel chan Message
+	closeChannel    chan bool // channel to stop processing messages
 
 	connectionPool map[string]*net.TCPConn
 }
@@ -88,7 +89,7 @@ func (c *client) startMessageHandling() {
 			log.Println("[DEBUG]", c.node.Name, " Message received", msg)
 			switch msg.Type {
 			case activateMsg:
-				c.handleActivateMessage(msg)
+				c.activateChannel <- msg
 				break
 			case barrierMsg:
 				c.barrierChannel <- msg.StringData[0] // Pass on the name, will be handled on the calling thread
@@ -96,6 +97,18 @@ func (c *client) startMessageHandling() {
 			default:
 				// log.Println("[ERROR] Unknown message type")
 			}
+		}
+
+	}
+}
+
+func (c *client) startActivateHandling() {
+	for {
+		select {
+		case <-c.closeChannel:
+			break // done processing
+		case msg := <-c.activateChannel:
+			c.handleActivateMessage(msg)
 		}
 
 	}
@@ -172,10 +185,7 @@ func (c *client) Barrier() {
 	}
 
 	// Need to broadcast the barrier message
-	msg := Message{
-		Type:       barrierMsg,
-		StringData: []string{c.Name},
-	}
+	msg := createBarrierMsg(c.Name)
 
 	log.Println("[DEBUG] Broadcasting barrier from", c.Name)
 	c.broadCastMsg(msg)

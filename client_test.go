@@ -5,6 +5,7 @@ import (
 	"net"
 	"sync"
 	"testing"
+	"time"
 )
 
 var nodeNumLock sync.Mutex
@@ -43,6 +44,11 @@ func GetActivateMessage(t *testing.T, nodes []Node) Message {
 	return msg
 }
 
+func GetBarrierMessage(t *testing.T, source string) Message {
+	msg := createBarrierMsg(source)
+	return msg
+}
+
 func TestClient_IsActive(t *testing.T) {
 	assert := assert.New(t)
 	c := GetClient_DataOnly(t)
@@ -55,15 +61,37 @@ func TestClient_IsActive(t *testing.T) {
 }
 
 func TestClient_HandleMessages(t *testing.T) {
-	// assert := assert.New(t)
-	// c := GetClient_DataOnly(t)
+	assert := assert.New(t)
+	c := GetClient_DataOnly(t)
 
-	// msgChannel := c.msgChannel
+	f := ClientFactory{}
+	// Start message handling for this test
+	f.startMessageHandling(c)
 
-	t.Errorf("Not Implemented")
+	msgChannel := c.msgChannel
+
+	timer := time.AfterFunc(100*time.Millisecond, func() {
+		panic("should have timed out by now")
+	})
+	defer timer.Stop()
+
+	// Test for barrier
+	barrierMsg := GetBarrierMessage(t, c.Name)
+
+	msgChannel <- barrierMsg
+	rcvdName := <-c.barrierChannel
+	assert.Equal(rcvdName, c.Name)
+
+	// Test for activate
+	activateMsg := GetActivateMessage(t, []Node{})
+	msgChannel <- activateMsg
+	rcvdMsg := <-c.activateChannel
+	assert.Equal(activateMsg, rcvdMsg)
 }
 
-func TestClient_Barrier(t *testing.T) {
+// http://stackoverflow.com/questions/19167970/mock-functions-in-golang
+// Good thoughts on how to mock out the messageing
+func TestClient_Barrier_Blocking(t *testing.T) {
 	t.Errorf("Not Implemented")
 }
 

@@ -46,6 +46,13 @@ func createActivateMsg(activeMembers []Node) (Message, error) {
 	return msg, err
 }
 
+func createBarrierMsg(source string) Message {
+	return Message{
+		Type:       barrierMsg,
+		StringData: []string{source},
+	}
+}
+
 func decodeActivateMsg(msg Message) ([]Node, error) {
 	log.Println("[DEBUG] Decoding activate message", msg)
 	var err error
