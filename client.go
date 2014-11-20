@@ -17,13 +17,11 @@ type client struct {
 	Name               string          // Unique name of the client
 	node               Node            // Used for TCP communications
 
-	messenger   Messenger
-	listener    Listener
-	msgIncoming chan Message // Main channel on which to receive messages
+	messenger Messenger
+	listener  Listener
 
-	barrierChannel  chan string // The channel that handles barrier message, will be the name of the node that sent the barrier
-	activateChannel chan Message
-	closeChannel    chan bool // channel to stop processing messages
+	barrierChannel chan string // The channel that handles barrier message, will be the name of the node that sent the barrier
+	closeChannel   chan bool   // channel to stop processing messages
 }
 
 func (c client) NotifyJoin(n *memberlist.Node) {
@@ -80,25 +78,13 @@ func (c client) HandleMessage(msg Message) {
 	log.Println("[DEBUG]", c.node.Name, " Message received", msg)
 	switch msg.Type {
 	case activateMsg:
-		c.activateChannel <- msg
+		c.handleActivateMessage(msg)
 		break
 	case barrierMsg:
 		c.barrierChannel <- msg.StringData[0] // Pass on the name, will be handled on the calling thread
 		break
 	default:
 		log.Println("[ERROR] Unknown message type")
-	}
-}
-
-func (c *client) startActivateHandling() {
-	for {
-		select {
-		case <-c.closeChannel:
-			break // done processing
-		case msg := <-c.activateChannel:
-			c.handleActivateMessage(msg)
-		}
-
 	}
 }
 
@@ -117,8 +103,8 @@ func (c *client) Close() {
 	// c.tcpListener.Close()
 	c.memberList.Shutdown()
 	c.closeChannel <- true
+	c.listener.Stop()
 	// Not totally sure how closing channels works TODO
-	close(c.msgIncoming) // Let all blocked processes finish
 	close(c.barrierChannel)
 }
 

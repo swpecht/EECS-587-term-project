@@ -20,7 +20,6 @@ func (f *ClientFactory) NewClient() (c client, err error) {
 	f.initializeData(&c)
 	f.initializeChannelMessenger(&c)
 	f.startMessageHandling(&c)
-	f.startActivateHandling(&c)
 	err = f.initializeMemberList(&c)
 	if err != nil {
 		return c, err
@@ -35,10 +34,8 @@ func (f *ClientFactory) initializeData(c *client) {
 	// Initialize variables
 	c.ActiveMembers = make(map[string]Node)
 	c.pendingMembers = new([]Node)
-	c.msgIncoming = make(chan Message)
 	c.closeChannel = make(chan bool)
 	c.barrierChannel = make(chan string)
-	c.activateChannel = make(chan Message)
 
 	var config *memberlist.Config = memberlist.DefaultLocalConfig()
 	c.Name = config.Name + ":" + strconv.Itoa(memberlist_starting_port) + "-" + strconv.Itoa(f.num_created)
@@ -61,10 +58,6 @@ func (f *ClientFactory) initializeChannelMessenger(c *client) {
 func (f *ClientFactory) startMessageHandling(c *client) {
 	c.listener = NewListener(c)
 	go c.listener.Listen(c.messenger)
-}
-
-func (f *ClientFactory) startActivateHandling(c *client) {
-	go c.startActivateHandling()
 }
 
 func (f *ClientFactory) initializeMemberList(c *client) error {

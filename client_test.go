@@ -5,7 +5,6 @@ import (
 	"net"
 	"sync"
 	"testing"
-	"time"
 )
 
 var nodeNumLock sync.Mutex
@@ -58,35 +57,6 @@ func TestClient_IsActive(t *testing.T) {
 	c.updateActiveMemberList([]Node{})
 	assert.False(c.IsActive())
 
-}
-
-func TestClient_HandleMessages(t *testing.T) {
-	assert := assert.New(t)
-	c := GetClient_DataOnly(t)
-
-	f := ClientFactory{}
-	// Start message handling for this test
-	f.startMessageHandling(c)
-
-	msgChannel := c.msgIncoming
-
-	timer := time.AfterFunc(100*time.Millisecond, func() {
-		panic("should have timed out by now")
-	})
-	defer timer.Stop()
-
-	// Test for barrier
-	barrierMsg := GetBarrierMessage(t, c.Name)
-
-	msgChannel <- barrierMsg
-	rcvdName := <-c.barrierChannel
-	assert.Equal(rcvdName, c.Name)
-
-	// Test for activate
-	activateMsg := GetActivateMessage(t, []Node{})
-	msgChannel <- activateMsg
-	rcvdMsg := <-c.activateChannel
-	assert.Equal(activateMsg, rcvdMsg)
 }
 
 // http://stackoverflow.com/questions/19167970/mock-functions-in-golang
