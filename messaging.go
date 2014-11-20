@@ -8,20 +8,28 @@ import (
 	"io"
 	"log"
 	"net"
+	"sync"
 )
 
+// Interface for sending peer to peer messages
 type Messenger interface {
+	// Blocking call to send a message
 	Send(msg Message) error
+	// Blocking call to receive a message
 	Recv(channel chan Message) error
+	// Resolve an address to a given interface for sending
+	// The returned type will depend on the implementation
 	resolve(addr string) (interface{}, error)
 }
 
+// Implements the messenger interface over channels. Useful for local
+// testing and debugging.
 type ChannelMessenger struct {
 	ResolverMap map[string]chan Message // Used by the resolver function to send messages
 	Incoming    chan Message
 }
 
-func (messenger *ChannelMessenger) Send(msg Message) error {
+func (messenger ChannelMessenger) Send(msg Message) error {
 	var resolved interface{}
 	resolved, err := messenger.resolve(msg.Target)
 	if err != nil {
@@ -40,7 +48,7 @@ func (messenger *ChannelMessenger) Send(msg Message) error {
 	return nil
 }
 
-func (messenger *ChannelMessenger) Recv(channel chan Message) error {
+func (messenger ChannelMessenger) Recv(channel chan Message) error {
 	log.Println("[DEBUG] Waiting on receive on", messenger.Incoming)
 	incomingMessage := <-messenger.Incoming
 	log.Println("[DEBUG] Message received", incomingMessage)
@@ -48,7 +56,7 @@ func (messenger *ChannelMessenger) Recv(channel chan Message) error {
 	return nil
 }
 
-func (messenger *ChannelMessenger) resolve(addr string) (interface{}, error) {
+func (messenger ChannelMessenger) resolve(addr string) (interface{}, error) {
 	channel, ok := messenger.ResolverMap[addr]
 	var err error
 	if !ok {
@@ -57,6 +65,71 @@ func (messenger *ChannelMessenger) resolve(addr string) (interface{}, error) {
 	}
 	log.Println("[DEBUG] Resolved", addr, "to", channel)
 	return channel, err
+}
+
+// Listener for messengers
+type Listener struct {
+	sync.Mutex // Embedded lock
+	// Channel to determe if the listener was stopped
+	stop      chan bool
+	isRunning bool
+}
+
+func NewListener() Listener {
+	return Listener{
+		isRunning: false,
+		stop:      make(chan bool),
+	}
+}
+
+// Blocking call that polls for call
+func (l *Listener) Listen(messenger Messenger, output chan Message) error {
+	l.Lock()
+	if l.isRunning == true {
+		log.Println("[ERROR] Attempt to start listener while running")
+		l.Unlock()
+		return errors.New("Alreading running!")
+	}
+	l.isRunning = true
+	l.Unlock()
+	log.Println("[DEBUG] Starting listener")
+
+	recvChan := make(chan Message)
+	for {
+		go messenger.Recv(recvChan)
+		stopped := l.waitForRecvOrStop(recvChan, output)
+		if stopped == true {
+			log.Println("[DEBUG] Stop received for listener")
+			close(recvChan)
+			return nil
+		}
+	}
+	return nil
+}
+
+// Waits for a message ot be recieved or the stop signal to be sent
+func (l *Listener) waitForRecvOrStop(recv chan Message, output chan Message) bool {
+	for {
+		select {
+		case <-l.stop:
+			return true
+		case msg := <-recv:
+			go func() { output <- msg }()
+			return false
+		}
+	}
+}
+
+func (l *Listener) Stop() error {
+	l.Lock()
+	defer l.Unlock()
+	if l.isRunning == false {
+		log.Println("[ERROR] Attempt to stop listener while not running")
+		return errors.New("Attempt to stop non running listener")
+	}
+	l.stop <- true
+	l.isRunning = false
+	return nil
 }
 
 // tcpListen listens for and handles incoming connections

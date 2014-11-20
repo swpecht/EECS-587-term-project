@@ -72,3 +72,53 @@ func TestMessaging_ChannelMesseger(t *testing.T) {
 		t.Errorf("Failed to handle invalid address on send")
 	}
 }
+
+func TestMessaging_Listener(t *testing.T) {
+	timeout := time.AfterFunc(500*time.Millisecond, func() {
+		panic("Failed to stop listener!")
+	})
+	defer timeout.Stop()
+
+	assert := assert.New(t)
+	messengers := GetChannelMessengers(2)
+	messenger0 := messengers[0]
+	messenger1 := messengers[1]
+
+	msgTo1 := Message{
+		Target:     "Messenger1",
+		StringData: []string{"Listener test"},
+	}
+	recvrChannel := make(chan Message)
+
+	l := NewListener()
+	// Test early stop
+	err := l.Stop()
+	if err == nil {
+		t.Error("Failed to detect early stop")
+	}
+	go l.Listen(messenger1, recvrChannel)
+
+	// Should immediately allow sending both messages
+	messenger0.Send(msgTo1)
+	messenger0.Send(msgTo1)
+	msgRecvd := <-recvrChannel
+	assert.Equal(msgTo1, msgRecvd)
+	msgRecvd = <-recvrChannel
+	assert.Equal(msgTo1, msgRecvd)
+
+	// Test starting listener twice
+	err = l.Listen(messenger1, recvrChannel)
+	if err == nil {
+		t.Error("Allowed listener to be started twice")
+	}
+
+	// Test stopping
+	l.Stop()
+	assert.False(l.isRunning)
+	time.AfterFunc(100*time.Millisecond, func() {
+		l.Stop()
+	})
+
+	// Is blocking, if stop is not called, it will time out
+	l.Listen(messenger1, recvrChannel)
+}
