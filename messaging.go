@@ -79,18 +79,20 @@ func (messenger ChannelMessenger) resolve(addr string) (interface{}, error) {
 type Listener struct {
 	sync.Mutex // Embedded lock
 	// Channel to determe if the listener was stopped
-	stop          chan bool
-	isRunning     bool
-	HandleMessage MessageHandler
+	stop      chan bool
+	isRunning bool
+	handler   MessageHandler
 }
 
-type MessageHandler func(msg Message)
+type MessageHandler interface {
+	HandleMessage(msg Message)
+}
 
 func NewListener(msgHandler MessageHandler) Listener {
 	return Listener{
-		isRunning:     false,
-		stop:          make(chan bool),
-		HandleMessage: msgHandler,
+		isRunning: false,
+		stop:      make(chan bool),
+		handler:   msgHandler,
 	}
 }
 
@@ -126,7 +128,7 @@ func (l *Listener) waitForRecvOrStop(recv chan Message) bool {
 		case <-l.stop:
 			return true
 		case msg := <-recv:
-			go func() { l.HandleMessage(msg) }()
+			go func() { l.handler.HandleMessage(msg) }()
 			return false
 		}
 	}

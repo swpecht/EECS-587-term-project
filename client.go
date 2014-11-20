@@ -18,6 +18,7 @@ type client struct {
 	node               Node            // Used for TCP communications
 
 	messenger   Messenger
+	listener    Listener
 	msgIncoming chan Message // Main channel on which to receive messages
 
 	barrierChannel  chan string // The channel that handles barrier message, will be the name of the node that sent the barrier
@@ -75,27 +76,17 @@ func (c *client) Join(addresses []string) {
 	return
 }
 
-// Handles different types of messages
-func (c *client) startMessageHandling() {
-
-	for {
-		select {
-		case <-c.closeChannel:
-			break // done processing
-		case msg := <-c.msgIncoming:
-			log.Println("[DEBUG]", c.node.Name, " Message received", msg)
-			switch msg.Type {
-			case activateMsg:
-				c.activateChannel <- msg
-				break
-			case barrierMsg:
-				c.barrierChannel <- msg.StringData[0] // Pass on the name, will be handled on the calling thread
-				break
-			default:
-				// log.Println("[ERROR] Unknown message type")
-			}
-		}
-
+func (c client) HandleMessage(msg Message) {
+	log.Println("[DEBUG]", c.node.Name, " Message received", msg)
+	switch msg.Type {
+	case activateMsg:
+		c.activateChannel <- msg
+		break
+	case barrierMsg:
+		c.barrierChannel <- msg.StringData[0] // Pass on the name, will be handled on the calling thread
+		break
+	default:
+		log.Println("[ERROR] Unknown message type")
 	}
 }
 

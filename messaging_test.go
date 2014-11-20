@@ -7,6 +7,16 @@ import (
 	"time"
 )
 
+type MockMessageHandler struct {
+	t        *testing.T
+	expected Message
+}
+
+func (handler MockMessageHandler) HandleMessage(msg Message) {
+	assert := assert.New(handler.t)
+	assert.Equal(handler.expected, msg)
+}
+
 func GetChannelMessengers(num int) []ChannelMessenger {
 	messengers := make([]ChannelMessenger, num)
 
@@ -89,8 +99,9 @@ func TestMessaging_Listener(t *testing.T) {
 		StringData: []string{"Listener test"},
 	}
 
-	var msgHandler MessageHandler = func(msg Message) {
-		assert.Equal(msgTo1, msg)
+	msgHandler := MockMessageHandler{
+		t:        t,
+		expected: msgTo1,
 	}
 
 	l := NewListener(msgHandler)

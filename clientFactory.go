@@ -18,10 +18,7 @@ type ClientFactory struct {
 func (f *ClientFactory) NewClient() (c client, err error) {
 	c = client{}
 	f.initializeData(&c)
-	err = f.initializeTCPListener(&c)
-	if err != nil {
-		return c, err
-	}
+	f.initializeChannelMessenger(&c)
 	f.startMessageHandling(&c)
 	f.startActivateHandling(&c)
 	err = f.initializeMemberList(&c)
@@ -54,25 +51,20 @@ func (f *ClientFactory) initializeData(c *client) {
 	}
 }
 
+func (f *ClientFactory) initializeChannelMessenger(c *client) {
+	c.messenger = ChannelMessenger{
+		Incoming: make(chan Message),
+	}
+}
+
 // Start event processing
 func (f *ClientFactory) startMessageHandling(c *client) {
-	go c.startMessageHandling()
+	c.listener = NewListener(c)
+	go c.listener.Listen(c.messenger)
 }
 
 func (f *ClientFactory) startActivateHandling(c *client) {
 	go c.startActivateHandling()
-}
-
-func (f *ClientFactory) initializeTCPListener(c *client) error {
-	// tcpAddr := c.node.GetTCPAddr()
-	// var err error
-	// // c.tcpListener, err = net.ListenTCP("tcp", &tcpAddr)
-	// if err != nil {
-	// 	return err
-	// }
-	// // Start the TCP listener
-	// go tcpListen(c.tcpListener, c.msgChannel)
-	return nil
 }
 
 func (f *ClientFactory) initializeMemberList(c *client) error {
