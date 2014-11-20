@@ -17,8 +17,8 @@ type client struct {
 	Name               string          // Unique name of the client
 	node               Node            // Used for TCP communications
 
+	messenger   Messenger
 	msgIncoming chan Message // Main channel on which to receive messages
-	msgOutgoing chan Message // channel on which to send messages
 
 	barrierChannel  chan string // The channel that handles barrier message, will be the name of the node that sent the barrier
 	activateChannel chan Message

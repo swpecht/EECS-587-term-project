@@ -22,6 +22,14 @@ type Messenger interface {
 	resolve(addr string) (interface{}, error)
 }
 
+// Messages that can be sent by messengers
+type Message struct {
+	Type       messageType
+	Target     string
+	StringData []string
+	FloatData  []float64
+}
+
 // Implements the messenger interface over channels. Useful for local
 // testing and debugging.
 type ChannelMessenger struct {
@@ -132,8 +140,12 @@ func (l *Listener) Stop() error {
 	return nil
 }
 
+// Messenger over TCP
+type TCPMessenger struct {
+}
+
 // tcpListen listens for and handles incoming connections
-func tcpListen(listener *net.TCPListener, channel chan Message) {
+func (messenger *TCPMessenger) tcpListen(listener *net.TCPListener, channel chan Message) {
 	for {
 		conn, err := listener.AcceptTCP()
 		if err != nil {
@@ -141,20 +153,13 @@ func tcpListen(listener *net.TCPListener, channel chan Message) {
 			// listener.Close()
 			return
 		}
-		go handleConn(conn, channel)
+		go messenger.handleConn(conn, channel)
 	}
-}
-
-type Message struct {
-	Type       messageType
-	Target     string
-	StringData []string
-	FloatData  []float64
 }
 
 // Encodes a messafe for sending over a tcp connection. Format is:
 // {len in}\n{msgbody}
-func (msg Message) Encode() (outputMsg string, err error) {
+func (messenger *TCPMessenger) Encode(msg Message) (outputMsg string, err error) {
 	msgBody, err := json.Marshal(msg)
 	if err != nil {
 		log.Println("[ERROR] Failed to encode message: " + err.Error())
@@ -163,7 +168,7 @@ func (msg Message) Encode() (outputMsg string, err error) {
 	return
 }
 
-func Decode(b []byte) (Message, error) {
+func (messenger *TCPMessenger) Decode(b []byte) (Message, error) {
 	var msg Message
 	err := json.Unmarshal(b, &msg)
 	if err != nil {
@@ -174,8 +179,8 @@ func Decode(b []byte) (Message, error) {
 }
 
 // handleConn handles a single incoming TCP connection
-func handleConn(c *net.TCPConn, channel chan Message) {
-	msg, err := recvMessage(c)
+func (messenger *TCPMessenger) handleConn(c *net.TCPConn, channel chan Message) {
+	msg, err := messenger.recvMessage(c)
 	if err != nil {
 		log.Println("[ERROR] Failed to rcvmessage: " + err.Error())
 	}
@@ -191,7 +196,7 @@ func handleConn(c *net.TCPConn, channel chan Message) {
 }
 
 // Receive a message over a tcp connections, and unmarshal it from JSON
-func recvMessage(conn *net.TCPConn) (Message, error) {
+func (messenger *TCPMessenger) recvMessage(conn *net.TCPConn) (Message, error) {
 
 	reader := bufio.NewReader(conn)
 	b, err := reader.ReadBytes('\n')
@@ -199,14 +204,14 @@ func recvMessage(conn *net.TCPConn) (Message, error) {
 		log.Println("[ERROR] Failed to read message")
 		return Message{}, err
 	}
-	msg, err := Decode(b)
+	msg, err := messenger.Decode(b)
 	return msg, err
 }
 
 // Marshal the message and send it over a given TCP connection
-func sendMessage(conn *net.TCPConn, msg Message) error {
+func (messenger *TCPMessenger) sendMessage(conn *net.TCPConn, msg Message) error {
 	// Serialize the message
-	msgString, err := msg.Encode()
+	msgString, err := messenger.Encode(msg)
 	if err != nil {
 		return err
 	}

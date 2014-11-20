@@ -94,10 +94,9 @@ func (c *client) activatePendingMembers() {
 	// TODO implement some logic here so everyone does send to the
 	// new members
 	for i := 0; i < len(pending_members); i++ {
-		tcp_conn, _ := c.getTCPConection(pending_members[i])
 		tcpAddr := pending_members[i].GetTCPAddr()
 
-		sendMessage(tcp_conn, msg)
+		c.messenger.Send(msg)
 		log.Println("[DEBUG] Activate message sent to: ", tcpAddr.String())
 	}
 
@@ -123,13 +122,9 @@ func (c *client) broadCastMsg(msg Message) {
 	c.ActiveMembersLock.Lock()
 	log.Println("[DEBUG] Broadcasting message to", len(c.ActiveMembers), "nodes")
 	for _, node := range c.ActiveMembers {
-		tcpConn, err := c.getTCPConection(node)
 		tcpAddr := node.GetTCPAddr()
-		if err != nil {
-			log.Println("[ERROR] Failed to broadcast message to ", tcpAddr.String())
-		}
 
-		err = sendMessage(tcpConn, msg)
+		err := c.messenger.Send(msg)
 		if err != nil {
 			log.Println("[ERROR] Failed to broadcast message to ", tcpAddr.String())
 		}

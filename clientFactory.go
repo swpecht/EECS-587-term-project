@@ -39,7 +39,6 @@ func (f *ClientFactory) initializeData(c *client) {
 	c.ActiveMembers = make(map[string]Node)
 	c.pendingMembers = new([]Node)
 	c.msgIncoming = make(chan Message)
-	c.msgOutgoing = make(chan Message)
 	c.closeChannel = make(chan bool)
 	c.barrierChannel = make(chan string)
 	c.activateChannel = make(chan Message)
