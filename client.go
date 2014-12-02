@@ -1,14 +1,13 @@
 package DUP
 
 import (
-	"github.com/hashicorp/memberlist"
 	"log"
 	"strconv"
 	"sync"
 )
 
 type client struct {
-	memberList *memberlist.Memberlist // Underlying memberlist to track membership
+	memberTracker MemberTracker // Underlying tracker to
 
 	pendingMembersLock sync.Mutex
 	pendingMembers     *[]Node // Members that are online, but not active
@@ -24,36 +23,8 @@ type client struct {
 	closeChannel   chan bool   // channel to stop processing messages
 }
 
-func (c client) NotifyJoin(n *memberlist.Node) {
-	new_node := Node{
-		Name: n.Name,
-		Addr: n.Addr,
-		Port: int(n.Port) + 100, // Add 100 for the port offset
-	}
-
-	if n.Name == c.Name {
-		// The initial self notification
-		c.ActiveMembersLock.Lock()
-		c.ActiveMembers[c.Name] = new_node
-		c.ActiveMembersLock.Unlock()
-		return
-	}
-
-	c.pendingMembersLock.Lock()
-	*c.pendingMembers = append(*c.pendingMembers, new_node)
-	c.pendingMembersLock.Unlock()
-}
-
-func (c client) NotifyLeave(n *memberlist.Node) {
-
-}
-
-func (c client) NotifyUpdate(n *memberlist.Node) {
-
-}
-
 func (c client) NumMembers() int {
-	return c.memberList.NumMembers()
+	return len(c.memberTracker.GetMemberList())
 }
 
 func (c client) NumActiveMembers() int {
@@ -68,8 +39,8 @@ func (c client) NumActiveMembers() int {
 // when a node is alone in it's undelying memberlist. Therefore, a group
 // of nodes cannot merge with another group, but the sub group must all join
 // individually. Should this be blocking until the node is made active?
-func (c *client) Join(addresses []string) {
-	c.memberList.Join(addresses)
+func (c *client) Join(address string) {
+	c.memberTracker.Join(address)
 	c.updateActiveMemberList([]Node{})
 	return
 }
@@ -105,25 +76,12 @@ func (c *client) Start() error {
 	go c.listener.Listen(c.messenger)
 	log.Println("[DEBUG] Started listener for", c.Name)
 
-	// Start Memberlist
-	var config *memberlist.Config = memberlist.DefaultLocalConfig()
-	config.BindPort = c.node.Port - 100 // off set for tcp
-	config.Name = c.Name
-	config.AdvertisePort = c.node.Port - 100 // off set for tcp
-	config.Events = c
-
-	list, err := memberlist.Create(config)
-	if err != nil {
-		log.Println("[ERROR] Failed to create member list for", c.Name, "Error: ", err.Error())
-	}
-	log.Println("[DEBUG] Started memberlist for", c.Name)
-	c.memberList = list
-	return err
+	return nil
 }
 
 func (c *client) Close() {
 	// c.tcpListener.Close()
-	c.memberList.Shutdown()
+	c.memberTracker.Leave()
 	c.closeChannel <- true
 	c.listener.Stop()
 	// Not totally sure how closing channels works TODO
