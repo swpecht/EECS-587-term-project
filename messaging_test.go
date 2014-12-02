@@ -2,7 +2,6 @@ package DUP
 
 import (
 	"github.com/stretchr/testify/assert"
-	"strconv"
 	"testing"
 	"time"
 )
@@ -18,17 +17,14 @@ func (handler MockMessageHandler) HandleMessage(msg Message) {
 }
 
 // Returns the ChannelMessengers and adds them all to the supplied resolver map.
-func GetChannelMessengers(num int, resolverMap map[string]chan Message) []ChannelMessenger {
+func GetChannelMessengers(names []string, resolverMap map[string]chan Message) []ChannelMessenger {
+	num := len(names)
 	messengers := make([]ChannelMessenger, num)
 
 	// Generate resolver map
 	for i := 0; i < num; i++ {
-		name := "Messenger" + strconv.Itoa(i)
-		channel := make(chan Message)
-		resolverMap[name] = channel
-
-		messengers[i] = ChannelMessenger{}
-		messengers[i].Incoming = channel
+		name := names[i]
+		messengers[i] = GetChannelMessenger(name, resolverMap)
 	}
 
 	// Update the messengers resolver map
@@ -39,10 +35,19 @@ func GetChannelMessengers(num int, resolverMap map[string]chan Message) []Channe
 	return messengers
 }
 
+func GetChannelMessenger(name string, resolverMap map[string]chan Message) ChannelMessenger {
+	channel := make(chan Message)
+	resolverMap[name] = channel
+	messenger := ChannelMessenger{}
+	messenger.Incoming = channel
+
+	return messenger
+}
+
 func TestMessaging_ChannelMesseger(t *testing.T) {
 	assert := assert.New(t)
 	resolverMap := make(map[string]chan Message)
-	messengers := GetChannelMessengers(2, resolverMap)
+	messengers := GetChannelMessengers([]string{"Messenger0", "Messenger1"}, resolverMap)
 	messenger0 := messengers[0]
 	messenger1 := messengers[1]
 
@@ -89,7 +94,7 @@ func TestMessaging_Listener(t *testing.T) {
 
 	assert := assert.New(t)
 	resolverMap := make(map[string]chan Message)
-	messengers := GetChannelMessengers(2, resolverMap)
+	messengers := GetChannelMessengers([]string{"Messenger0", "Messenger1"}, resolverMap)
 	messenger0 := messengers[0]
 	messenger1 := messengers[1]
 

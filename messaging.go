@@ -69,6 +69,9 @@ func (messenger ChannelMessenger) resolve(addr string) (interface{}, error) {
 	var err error
 	if !ok {
 		log.Println("[ERROR] Failed to resolve", addr)
+		for k, _ := range messenger.ResolverMap {
+			log.Println("[ERROR] Valid choices are", k)
+		}
 		err = errors.New("Address not found!")
 	}
 	log.Println("[DEBUG] Resolved", addr, "to", channel)

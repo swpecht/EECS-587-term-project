@@ -2,6 +2,7 @@ package DUP
 
 import (
 	"github.com/stretchr/testify/assert"
+	"log"
 	"testing"
 	"time"
 )
@@ -10,16 +11,24 @@ import (
 func GetClients(t *testing.T, num int, headName string) []client {
 	factory := ClientFactory{}
 
-	resolverMap := make(map[string]chan Message)
-	messengers := GetChannelMessengers(2, resolverMap)
+	// Create clients
 	clients := make([]client, num)
-	var err error
-
+	clientNames := make([]string, num)
 	for i := 0; i < num; i++ {
-		clients[i], err = factory.NewClient(messengers[i])
-		if err != nil {
-			t.Error("Failed to create client")
-		}
+		clients[i] = factory.NewClient()
+
+		tcpAddr := clients[i].node.GetTCPAddr()
+		clientNames[i] = tcpAddr.String()
+		log.Println("[DEBUG] Created client", tcpAddr.String())
+	}
+
+	// Create channel messengers
+	resolverMap := make(map[string]chan Message)
+	messengers := GetChannelMessengers(clientNames, resolverMap)
+
+	// Attach chennel messengers to clients
+	for i := 0; i < num; i++ {
+		clients[i].messenger = messengers[i]
 	}
 
 	return clients
@@ -35,7 +44,11 @@ func TestInteg_ChannelMessenger(t *testing.T) {
 	defer timeout.Stop()
 
 	headName := "0.0.0.0:7946"
-	clients := GetClients(t, 4, headName)
+	clients := GetClients(t, 3, headName)
+
+	for _, c := range clients {
+		c.Start()
+	}
 
 	clients[1].Join([]string{headName})
 	clients[2].Join([]string{headName})

@@ -15,15 +15,9 @@ type ClientFactory struct {
 	num_created int
 }
 
-func (f *ClientFactory) NewClient(messenger Messenger) (c client, err error) {
+func (f *ClientFactory) NewClient() (c client) {
 	c = client{}
 	f.initializeData(&c)
-	c.messenger = messenger
-	f.startMessageHandling(&c)
-	err = f.initializeMemberList(&c)
-	if err != nil {
-		return c, err
-	}
 
 	f.num_created += 1
 
@@ -43,32 +37,7 @@ func (f *ClientFactory) initializeData(c *client) {
 	// Configure the local Node data
 	c.node = Node{
 		Name: c.Name,
-		Addr: net.ParseIP(config.BindAddr),
-		Port: config.BindPort + tcp_offset,
+		Addr: net.ParseIP("10.0.2.15"),
+		Port: config.BindPort + tcp_offset + f.num_created,
 	}
-}
-
-func (f *ClientFactory) initializeChannelMessenger(c *client) {
-	c.messenger = ChannelMessenger{
-		Incoming:    make(chan Message),
-		ResolverMap: make(map[string]chan Message),
-	}
-}
-
-// Start event processing
-func (f *ClientFactory) startMessageHandling(c *client) {
-	c.listener = NewListener(c)
-	go c.listener.Listen(c.messenger)
-}
-
-func (f *ClientFactory) initializeMemberList(c *client) error {
-	var config *memberlist.Config = memberlist.DefaultLocalConfig()
-	config.BindPort = memberlist_starting_port + f.num_created
-	config.Name = c.Name
-	config.AdvertisePort = memberlist_starting_port + f.num_created
-	config.Events = c
-
-	list, err := memberlist.Create(config)
-	c.memberList = list
-	return err
 }

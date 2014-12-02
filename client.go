@@ -99,6 +99,28 @@ func (c *client) handleActivateMessage(msg Message) {
 	log.Println("[DEBUG] Activated node, total active nodes: " + strconv.Itoa(len(activeNodes)))
 }
 
+func (c *client) Start() error {
+	// Start event processing
+	c.listener = NewListener(c)
+	go c.listener.Listen(c.messenger)
+	log.Println("[DEBUG] Started listener for", c.Name)
+
+	// Start Memberlist
+	var config *memberlist.Config = memberlist.DefaultLocalConfig()
+	config.BindPort = c.node.Port - 100 // off set for tcp
+	config.Name = c.Name
+	config.AdvertisePort = c.node.Port - 100 // off set for tcp
+	config.Events = c
+
+	list, err := memberlist.Create(config)
+	if err != nil {
+		log.Println("[ERROR] Failed to create member list for", c.Name, "Error: ", err.Error())
+	}
+	log.Println("[DEBUG] Started memberlist for", c.Name)
+	c.memberList = list
+	return err
+}
+
 func (c *client) Close() {
 	// c.tcpListener.Close()
 	c.memberList.Shutdown()

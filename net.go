@@ -96,8 +96,10 @@ func (c *client) activatePendingMembers() {
 	for i := 0; i < len(pending_members); i++ {
 		tcpAddr := pending_members[i].GetTCPAddr()
 		msg.Target = tcpAddr.String()
-		c.messenger.Send(msg)
-		log.Println("[DEBUG] Activate message sent to: ", tcpAddr.String())
+		err := c.messenger.Send(msg)
+		if err == nil {
+			log.Println("[DEBUG] Activate message sent to: ", tcpAddr.String())
+		}
 	}
 
 	// Update the active members on the local node
