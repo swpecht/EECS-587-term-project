@@ -1,13 +1,15 @@
 package DUP
 
 import (
+	"github.com/hashicorp/memberlist"
 	"log"
 	"strconv"
 	"sync"
+	"time"
 )
 
 type client struct {
-	memberTracker MemberTracker // Underlying tracker to
+	memberTracker *memberlist.Memberlist // Underlying tracker to
 
 	pendingMembersLock sync.Mutex
 	pendingMembers     *[]Node // Members that are online, but not active
@@ -24,7 +26,7 @@ type client struct {
 }
 
 func (c client) NumMembers() int {
-	return len(c.memberTracker.GetMemberList())
+	return c.memberTracker.NumMembers()
 }
 
 func (c client) NumActiveMembers() int {
@@ -40,7 +42,7 @@ func (c client) NumActiveMembers() int {
 // of nodes cannot merge with another group, but the sub group must all join
 // individually. Should this be blocking until the node is made active?
 func (c *client) Join(address string) {
-	c.memberTracker.Join(address)
+	c.memberTracker.Join([]string{address})
 	c.updateActiveMemberList([]Node{})
 	return
 }
@@ -74,14 +76,28 @@ func (c *client) Start() error {
 	// Start event processing
 	c.listener = NewListener(c)
 	go c.listener.Listen(c.messenger)
-	log.Println("[DEBUG] Started listener for", c.Name)
+
+	var config *memberlist.Config = memberlist.DefaultLocalConfig()
+	config.BindPort = c.node.Port - 100 // off set for tcp
+	config.Name = c.Name
+	config.AdvertisePort = c.node.Port - 100 // off set for tcp
+	config.Events = c
+
+	list, err := memberlist.Create(config)
+	if err != nil {
+		log.Println("[ERROR] Failed to create member list for", c.Name, "Error: ", err.Error())
+	}
+	log.Println("[DEBUG] Started memberlist for", c.Name)
+	c.memberTracker = list
+
+	log.Println("[DEBUG] Started client", c.Name)
 
 	return nil
 }
 
 func (c *client) Close() {
 	// c.tcpListener.Close()
-	c.memberTracker.Leave()
+	c.memberTracker.Leave(time.Millisecond * 500)
 	c.closeChannel <- true
 	c.listener.Stop()
 	// Not totally sure how closing channels works TODO
@@ -183,5 +199,33 @@ func (c *client) broadCastMsg(msg Message) {
 		}
 	}
 	c.ActiveMembersLock.Unlock()
+
+}
+
+func (c client) NotifyJoin(n *memberlist.Node) {
+	new_node := Node{
+		Name: n.Name,
+		Addr: n.Addr,
+		Port: int(n.Port) + 100, // Add 100 for the port offset
+	}
+
+	if n.Name == c.Name {
+		// The initial self notification
+		c.ActiveMembersLock.Lock()
+		c.ActiveMembers[c.Name] = new_node
+		c.ActiveMembersLock.Unlock()
+		return
+	}
+
+	c.pendingMembersLock.Lock()
+	*c.pendingMembers = append(*c.pendingMembers, new_node)
+	c.pendingMembersLock.Unlock()
+}
+
+func (c client) NotifyLeave(n *memberlist.Node) {
+
+}
+
+func (c client) NotifyUpdate(n *memberlist.Node) {
 
 }

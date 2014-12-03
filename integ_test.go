@@ -1,6 +1,7 @@
 package DUP
 
 import (
+	"github.com/stretchr/testify/assert"
 	"log"
 	"testing"
 )
@@ -34,24 +35,24 @@ func GetClients(t *testing.T, num int, headName string) []client {
 }
 
 func TestInteg_ChannelMessenger(t *testing.T) {
-	// assert := assert.New(t)
+	assert := assert.New(t)
 
 	// timeout := time.AfterFunc(500*time.Millisecond, func() {
 	// 	panic("TestInteg_ChannelMessenger timed out!")
 	// })
 	// defer timeout.Stop()
 
-	// headName := "0.0.0.0:7946"
-	// clients := GetClients(t, 3, headName)
+	headName := "0.0.0.0:7946"
+	clients := GetClients(t, 3, headName)
 
-	// for _, c := range clients {
-	// 	c.Start()
-	// }
+	for i := range clients {
+		clients[i].Start()
+	}
 
-	// clients[1].Join([]string{headName})
-	// clients[2].Join([]string{headName})
-	// num_clients := clients[0].NumMembers()
-	// assert.Equal(num_clients, 3, "Incorrect num of initial clients")
+	clients[1].Join(headName)
+	clients[2].Join(headName)
+	num_clients := clients[0].NumMembers()
+	assert.Equal(num_clients, 3, "Incorrect num of initial clients")
 
 	// // Test tracking of active nodes
 	// assert.Equal(1, clients[0].NumActiveMembers(), "bad initial active members")
