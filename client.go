@@ -22,7 +22,6 @@ type client struct {
 	listener  Listener
 
 	barrierChannel chan string // The channel that handles barrier message, will be the name of the node that sent the barrier
-	closeChannel   chan bool   // channel to stop processing messages
 }
 
 func (c client) NumMembers() int {
@@ -96,12 +95,12 @@ func (c *client) Start() error {
 }
 
 func (c *client) Close() {
-	// c.tcpListener.Close()
 	c.memberTracker.Leave(time.Millisecond * 500)
-	c.closeChannel <- true
+	log.Println("[DEBUG]", c.Name, "left memberTracker")
 	c.listener.Stop()
 	// Not totally sure how closing channels works TODO
 	close(c.barrierChannel)
+	log.Println("[DEBUG]", c.Name, "shut down")
 }
 
 // Wait until the client is active

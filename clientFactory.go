@@ -28,7 +28,6 @@ func (f *ClientFactory) initializeData(c *client) {
 	// Initialize variables
 	c.ActiveMembers = make(map[string]Node)
 	c.pendingMembers = new([]Node)
-	c.closeChannel = make(chan bool)
 	c.barrierChannel = make(chan string)
 
 	var config *memberlist.Config = memberlist.DefaultLocalConfig()

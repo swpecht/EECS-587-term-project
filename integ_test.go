@@ -73,6 +73,11 @@ func TestInteg_ChannelMessenger(t *testing.T) {
 	assert.True(clients[1].IsActive())
 	assert.True(clients[2].IsActive())
 
-	// t.Error("Not implemented.")
+	clients[1].Close()
+	time.Sleep(time.Millisecond * 50)
+	assert.Equal(2, clients[0].NumActiveMembers(), "Didn't handle client leaving")
+	assert.Equal(2, clients[2].NumActiveMembers(), "Didn't handle client leaving")
+
+	t.Error("Not implemented.")
 
 }
