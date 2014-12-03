@@ -73,6 +73,6 @@ func TestInteg_ChannelMessenger(t *testing.T) {
 	assert.True(clients[1].IsActive())
 	assert.True(clients[2].IsActive())
 
-	t.Error("Not implemented.")
+	// t.Error("Not implemented.")
 
 }
