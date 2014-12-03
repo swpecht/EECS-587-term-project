@@ -60,7 +60,7 @@ func TestInteg_ChannelMessenger(t *testing.T) {
 	assert.Equal(0, clients[1].NumActiveMembers(), "Not purging active after join")
 
 	// Test tracking of pending nodes
-	assert.Equal(2, len(*clients[0].pendingMembers), "Not tracking pending members")
+	assert.Equal(2, len(clients[0].pendingMembers), "Not tracking pending members")
 
 	num_active := clients[0].UpdateActiveMembers()
 	assert.Equal(3, num_active, "invlaid new number of active members.")

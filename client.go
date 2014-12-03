@@ -12,7 +12,7 @@ type client struct {
 	memberTracker *memberlist.Memberlist // Underlying tracker to
 
 	pendingMembersLock sync.Mutex
-	pendingMembers     *[]Node // Members that are online, but not active
+	pendingMembers     map[string]Node // Members that are online, but not active
 	ActiveMembersLock  sync.Mutex
 	ActiveMembers      map[string]Node // Members that are online and active, mapped by the memberlist.Node.Name
 	Name               string          // Unique name of the client
@@ -226,12 +226,21 @@ func (c client) NotifyJoin(n *memberlist.Node) {
 	}
 
 	c.pendingMembersLock.Lock()
-	*c.pendingMembers = append(*c.pendingMembers, new_node)
+	c.pendingMembers[n.Name] = new_node
 	c.pendingMembersLock.Unlock()
 }
 
 func (c client) NotifyLeave(n *memberlist.Node) {
+	log.Println("[DEBUG]", n.Name, "left")
+	c.ActiveMembersLock.Lock()
+	// Delete the node from active members
+	delete(c.ActiveMembers, n.Name)
+	c.ActiveMembersLock.Unlock()
 
+	// Delete the node from pending members
+	c.pendingMembersLock.Lock()
+	delete(c.pendingMembers, n.Name)
+	c.pendingMembersLock.Unlock()
 }
 
 func (c client) NotifyUpdate(n *memberlist.Node) {

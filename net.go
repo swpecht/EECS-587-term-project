@@ -85,16 +85,22 @@ func (c *client) activatePendingMembers() {
 	c.ActiveMembersLock.Unlock()
 
 	c.pendingMembersLock.Lock()
-	pending_members := *c.pendingMembers
+	pendingMembers := make([]Node, len(c.pendingMembers))
+	i = 0
+	for _, value := range c.pendingMembers {
+		pendingMembers[i] = value
+		i++
+	}
 	c.pendingMembersLock.Unlock()
-	activeMembers = append(activeMembers, pending_members...)
+
+	activeMembers = append(activeMembers, pendingMembers...)
 
 	msg, _ := createActivateMsg(activeMembers)
 
 	// TODO implement some logic here so everyone does send to the
 	// new members
-	for i := 0; i < len(pending_members); i++ {
-		tcpAddr := pending_members[i].GetTCPAddr()
+	for i := 0; i < len(pendingMembers); i++ {
+		tcpAddr := pendingMembers[i].GetTCPAddr()
 		msg.Target = tcpAddr.String()
 		err := c.messenger.Send(msg)
 		if err == nil {

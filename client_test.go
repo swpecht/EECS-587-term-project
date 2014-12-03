@@ -177,8 +177,9 @@ func TestClient_UpdateActiveMembers(t *testing.T) {
 	pendingNodes := []Node{GetNode(t), GetNode(t)}
 
 	c.updateActiveMemberList(activeNodes)
-	c.pendingMembers = &pendingNodes
-	// nodesToNotify := append(activeNodes, pendingNodes...)
+	for i := range pendingNodes {
+		c.pendingMembers[pendingNodes[i].Name] = pendingNodes[i]
+	}
 	go c.UpdateActiveMembers()
 
 	// Should send messages to both pending and active
