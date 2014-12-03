@@ -29,7 +29,7 @@ func (c client) NumMembers() int {
 	return c.memberTracker.NumMembers()
 }
 
-func (c client) NumActiveMembers() int {
+func (c *client) NumActiveMembers() int {
 	c.ActiveMembersLock.Lock()
 	num := len(c.ActiveMembers)
 	c.ActiveMembersLock.Unlock()
@@ -48,7 +48,7 @@ func (c *client) Join(address string) {
 }
 
 func (c client) HandleMessage(msg Message) {
-	log.Println("[DEBUG]", c.node.Name, " Message received", msg)
+	// log.Println("[DEBUG]", c.node.Name, " Message received", msg)
 	switch msg.Type {
 	case activateMsg:
 		c.handleActivateMessage(msg)
@@ -69,7 +69,7 @@ func (c *client) handleActivateMessage(msg Message) {
 		return
 	}
 	c.updateActiveMemberList(activeNodes)
-	log.Println("[DEBUG] Activated node, total active nodes: " + strconv.Itoa(len(activeNodes)))
+	log.Println("[DEBUG]", c.Name, "IsActive", c.IsActive(), "total active nodes: "+strconv.Itoa(len(activeNodes)))
 }
 
 func (c *client) Start() error {
@@ -110,6 +110,7 @@ func (c *client) WaitActive() {
 		if c.IsActive() == true {
 			break
 		}
+		time.Sleep(time.Millisecond * 10)
 	}
 }
 
@@ -125,13 +126,21 @@ func (c *client) UpdateActiveMembers() int {
 }
 
 func (c *client) updateActiveMemberList(members []Node) {
-	log.Println("[DEBUG] Updateing active member list with: " + strconv.Itoa(len(members)))
+
 	c.ActiveMembersLock.Lock()
-	c.ActiveMembers = make(map[string]Node) // Reset the active members map
+
+	// Delete everything in the map, can't just make a new one, otherwise
+	// the references can be broken across threads
+	for k := range c.ActiveMembers {
+		delete(c.ActiveMembers, k)
+	}
 
 	for i := range members {
 		c.ActiveMembers[members[i].Name] = members[i]
 	}
+
+	log.Println("[DEBUG] Updateing active member list with:", c.ActiveMembers)
+
 	c.ActiveMembersLock.Unlock()
 
 }
