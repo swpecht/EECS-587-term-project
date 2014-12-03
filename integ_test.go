@@ -78,6 +78,4 @@ func TestInteg_ChannelMessenger(t *testing.T) {
 	assert.Equal(2, clients[0].NumActiveMembers(), "Didn't handle client leaving")
 	assert.Equal(2, clients[2].NumActiveMembers(), "Didn't handle client leaving")
 
-	t.Error("Not implemented.")
-
 }
