@@ -147,6 +147,24 @@ func TestClient_HandleActivate(t *testing.T) {
 
 }
 
+func TestClient_WaitActive(t *testing.T) {
+	assert := assert.New(t)
+	// Create a client that is not active
+	c := GetClient_DataOnly(t)
+	c.updateActiveMemberList([]Node{})
+	assert.False(c.IsActive())
+
+	timeout := time.AfterFunc(500*time.Millisecond, func() {
+		panic("TestClient_WaitActive timed out!")
+	})
+	defer timeout.Stop()
+
+	// Update the active list with its self
+	go c.updateActiveMemberList([]Node{c.node})
+	c.WaitActive()
+
+}
+
 func TestClient_UpdateActiveMembers(t *testing.T) {
 	assert := assert.New(t)
 	timer := time.AfterFunc(500*time.Millisecond, func() {
