@@ -7,9 +7,9 @@ import (
 )
 
 func main() {
-	numNodes := 10
+	numNodes := 2
+	numIterations := 50
 
-	factory := GoMM.ClientFactory{}
 	headName := "0.0.0.0:7946"
 	clients := GoMM.GetLocalClients(numNodes, headName)
 
@@ -30,14 +30,22 @@ func main() {
 		clients[i].WaitActive()
 	}
 
+	stringData := []string{"Hello", "World"}
+	floatData := []float64{2.0, 48182.2}
+
 	start := time.Now()
-	for i := 0; i < numNodes; i++ {
-		fmt.Println("Hello, world.\n", factory, "\n")
-		// Run a barrier, maybe have a client output to a channel when it
-		// recieves the message, will allow for timing.
-		// May require some knowledge of which one will get the message last.
+	for i := 0; i < numIterations; i++ {
+		clients[0].Broadcast(stringData, floatData)
+		ReceiveAllMessages(clients)
 	}
 	elapsed := time.Since(start)
-	fmt.Println("Benchmakr took", elapsed)
+	fmt.Println("Benchmakr took", elapsed, "for", numIterations, "iterations")
+	fmt.Println("Average seconds per iteration:", elapsed.Seconds()/float64(numIterations))
+}
 
+// Receive messages all on clients but the root node
+func ReceiveAllMessages(clients []GoMM.Client) {
+	for i := 1; i < len(clients); i++ {
+		<-clients[1].BroadcastChannel
+	}
 }
