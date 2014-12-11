@@ -40,7 +40,7 @@ SCRIPT
     go_dev.vm.network "forwarded_port", guest: 8080, host: 8080
 
     # Make sure everything is in the right place for go
-    config.vm.synced_folder "./", "/home/vagrant/go/src/github.com/swpecht/DUP"
+    config.vm.synced_folder "./", "/home/vagrant/go/src/github.com/swpecht/EECS-587-term-project"
     go_dev.vm.provider "virtualbox" do |v|
       v.memory = 2048
     end
