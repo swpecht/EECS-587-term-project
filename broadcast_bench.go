@@ -7,8 +7,8 @@ import (
 )
 
 func main() {
-	numNodes := 2
-	numIterations := 50
+	numNodes := 50
+	numIterations := 100
 
 	headName := "0.0.0.0:7946"
 	clients := GoMM.GetLocalClients(numNodes, headName)
@@ -45,7 +45,7 @@ func main() {
 
 // Receive messages all on clients but the root node
 func ReceiveAllMessages(clients []GoMM.Client) {
-	for i := 1; i < len(clients); i++ {
-		<-clients[1].BroadcastChannel
+	for i := 0; i < len(clients); i++ {
+		<-clients[i].BroadcastChannel
 	}
 }
