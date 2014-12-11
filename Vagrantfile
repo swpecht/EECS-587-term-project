@@ -41,6 +41,7 @@ SCRIPT
 
     # Make sure everything is in the right place for go
     config.vm.synced_folder "./", "/home/vagrant/go/src/github.com/swpecht/EECS-587-term-project"
+    config.vm.synced_folder "./libraries/GoMM", "/home/vagrant/go/src/github.com/swpecht/GoMM"
     go_dev.vm.provider "virtualbox" do |v|
       v.memory = 2048
     end
