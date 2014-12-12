@@ -7,10 +7,13 @@ import (
 )
 
 func main() {
-	numNodes := 8
+	numNodes := 16
 	numIterations := 100
 
-	clients := GoMM.GetLocalClients(numNodes)
+	clients, err := GoMM.GetTCPClients(numNodes)
+	if err != nil {
+		fmt.Printf("Failed to create clients: %s", err.Error())
+	}
 	headName := clients[0].JoinAddr()
 
 	for i := range clients {
