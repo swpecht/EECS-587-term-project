@@ -7,11 +7,11 @@ import (
 )
 
 func main() {
-	numNodes := 50
+	numNodes := 8
 	numIterations := 100
 
-	headName := "0.0.0.0:7946"
-	clients := GoMM.GetLocalClients(numNodes, headName)
+	clients := GoMM.GetLocalClients(numNodes)
+	headName := clients[0].JoinAddr()
 
 	for i := range clients {
 		clients[i].Start()
