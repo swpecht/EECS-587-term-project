@@ -1,0 +1,12 @@
+{
+    "id": "eecs-test", 
+    "container": {
+      "docker": {
+        "image": "swpecht/go-test"
+      }
+    },
+    "cmd": "/tmp/docker_example",
+    "cpus": 1,
+    "mem": 128.0,
+    "instances": 2
+}
