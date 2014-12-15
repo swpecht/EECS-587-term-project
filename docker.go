@@ -10,6 +10,7 @@ func main() {
 	// Test configurations
 	numNodes := 2
 	numIterations := 10
+	headNode := "10.0.2.15:7946"
 
 	// Client data
 	isHeadNode := true
@@ -20,14 +21,15 @@ func main() {
 		return
 	}
 	client := clients[0]
+	fmt.Println("Created client on:", client.JoinAddr())
 
 	client.Start()
-	if client.JoinAddr() == "10.0.2.15:7946" {
-		fmt.Printf("This node is head node")
+	if client.JoinAddr() == headNode {
+		fmt.Println("This node is head node")
 	} else {
-		fmt.Printf("This node is NOT head node")
+		fmt.Println("This node is NOT head node")
 		isHeadNode = false
-		client.Join("10.0.2.15:7946")
+		client.Join(headNode)
 		client.WaitActive()
 	}
 
