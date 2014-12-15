@@ -8,9 +8,9 @@ import (
 
 func main() {
 	// Test configurations
-	numNodes := 2
+	numNodes := 4
 	numIterations := 10
-	headNode := "10.0.2.15:7946"
+	headNode := "130.211.122.241:7946"
 
 	// Client data
 	isHeadNode := true
@@ -24,7 +24,7 @@ func main() {
 	fmt.Println("Created client on:", client.JoinAddr())
 
 	client.Start()
-	if client.JoinAddr() == headNode {
+	if client.JoinAddr() == "10.240.94.200:7946" {
 		fmt.Println("This node is head node")
 	} else {
 		fmt.Println("This node is NOT head node")
