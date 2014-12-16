@@ -8,7 +8,7 @@ import (
 
 func main() {
 	// Test configurations
-	numNodes := 61
+	numNodes := 7
 	numIterations := 10
 	headNode := "130.211.122.241:7946"
 
