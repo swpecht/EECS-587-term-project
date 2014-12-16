@@ -31,6 +31,7 @@ func main() {
 
 	id := client.GetId()
 	numNodes := client.NumActiveMembers()
+	start := time.Now()
 	for i := iter; i < numIterations; i++ {
 		oldId := id
 		oldNum := numNodes
@@ -47,6 +48,9 @@ func main() {
 		}
 		DoIteration(id, numNodes, i, client)
 	}
+	elapsed := time.Since(start)
+	fmt.Println("Benchmark took", elapsed, "for", numIterations-iter, "iterations on", numNodes, "nodes")
+	fmt.Println("Average seconds per iteration:", elapsed.Seconds()/float64(numIterations-iter))
 }
 
 // Returns the current iteration
