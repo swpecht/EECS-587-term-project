@@ -3,10 +3,11 @@ package main
 import (
 	"fmt"
 	"github.com/swpecht/GoMM"
+	"time"
 )
 
 func main() {
-	numIterations := 500
+	numIterations := 50
 	headNode := "10.0.2.15:7946" // "130.211.122.241:7946"
 
 	f := GoMM.ClientFactory{}
@@ -20,25 +21,64 @@ func main() {
 	client.Join(headNode)
 
 	client.WaitActive()
+	// Check if first worker
+	iter := 0
+	if client.NumActiveMembers() > 1 {
+		// If not, should be getting the iteration
+		msg := <-client.BroadcastChannel
+		iter = int(msg.FloatData[0])
+	}
 
-	for i := 0; i < numIterations; i++ {
-		id, numNodes := UpdatePool(client)
-		Shuffle(id, numNodes, client)
-		DoIteration(id)
+	id := client.GetId()
+	numNodes := client.NumActiveMembers()
+	for i := iter; i < numIterations; i++ {
+		oldId := id
+		oldNum := numNodes
+
+		UpdatePool(client, i)
+
+		id = client.GetId()
+		numNodes = client.NumActiveMembers()
+
+		// Shuffle if update or first iteration
+		if oldId != id || oldNum != numNodes || i == iter {
+			// Need to reshuffle data
+			Shuffle(id, numNodes, client)
+		}
+		DoIteration(id, numNodes, i, client)
 	}
 }
 
-// Returns the id, numActiveNodes
-func UpdatePool(client *GoMM.Client) (int, int) {
-	return 0, 1
+// Returns the current iteration
+func UpdatePool(client *GoMM.Client, iter int) int {
+	if client.NumMembers() != client.NumActiveMembers() {
+		client.UpdateActiveMembers()
+		// If client 0, sent the iteration broadcast to everyone
+		if client.GetId() == 0 {
+			client.Broadcast([]string{}, []float64{float64(iter)})
+		}
+		// Receive the iteration broadcast
+		msg := <-client.BroadcastChannel
+		iter = int(msg.FloatData[0])
+
+	}
+	fmt.Println("Doing UpdatePool barrier")
+	client.Barrier()
+	return iter
 }
 
 // Shuffles / distributes the data between all nods
 func Shuffle(id, numNodes int, client *GoMM.Client) {
-
+	// Do a barrier for worst case coordination
+	fmt.Println("Doing Shuffle barrier")
+	client.Barrier()
 }
 
 // Perform the actual iterations
-func DoIteration(id int) {
-
+func DoIteration(id, numNodes, iter int, client *GoMM.Client) {
+	duration := time.Duration(500 / numNodes)
+	time.Sleep(duration * time.Millisecond)
+	// Assume worst case communications
+	// client.Barrier()
+	fmt.Printf("Iteration %v \n", iter)
 }
